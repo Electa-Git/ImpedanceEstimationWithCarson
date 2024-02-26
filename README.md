@@ -17,7 +17,7 @@ The .dss data in this repository are released under the following licence:
 The code in this repository, on the other hand, is release under the following licence:
 - ### todo
 
-A paper is under review, [preprint available here](https://arxiv.org/abs/2311.11997).
+A paper is under review, [preprint available here](https://arxiv.org/).
 
 This project is a collaboration between KU Leuven (ESAT/Electa)/EnergyVille (Leuven and Genk, Belgium), CSIRO Energy (Newcastle, NSW, Australia) and GridQube (Springfield, QLD, Australia).
 
