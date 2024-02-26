@@ -12,11 +12,10 @@ The package has four components.
 - problem as an extension of PMD, relying on julia's JuMP
 - ...
 
-The raw source for the network model and telemetry dataset are available under a CC BY-4.0 licence:
-- 
-
+The .dss data in this repository are released under the following licence:
+- ### todo
 The code in this repository, on the other hand, is release under the following licence:
-- ###todo
+- ### todo
 
 A paper is under review, [preprint available here](https://arxiv.org/abs/2311.11997).
 
