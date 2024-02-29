@@ -1,0 +1,8 @@
+! Imported from Lines.txt, with modified linecodes
+! ----------------------------------------------------------------------------------------------
+New Line.LINE0 Bus1=sourcebus.1.2.3.4 Bus2=10.1.2.3.4 phases=4 Linecode=LC3 Length=1 Units=m
+New Line.LINE8 Bus1=10.1.2.3.4 Bus2=4.1.2.3.4 phases=4 Linecode=LC3 Length=50 Units=m
+New Line.LINE4 Bus1=4.1.2.3.4 Bus2=8.1.2.3.4 phases=4 Linecode=LC3 Length=5 Units=m
+New Line.LINE3 Bus1=4.1.2.3.4 Bus2=1.1.2.3.4 phases=4 Linecode=LC3 Length=7 Units=m
+New Line.LINE5 Bus1=4.1.2.3.4 Bus2=9.1.2.3.4 phases=4 Linecode=LC3 Length=9 Units=m
+! ----------------------------------------------------------------------------------------------

@@ -1,0 +1,13 @@
+name = "DataDriveImpedanceEstimationWithCarson"
+uuid = "7a5debc2-ed2d-4031-bd1e-35d3af03268b"
+authors = ["Marta Vanin <marta.vanin@kuleuven.be>", "Rahmat Heidari <heidari.rahmat@gmail.com">, "Frederik Geth <frederik.geth@gridqube.come>"]
+version = "0.1.0"
+
+[deps]
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
+InfrastructureModels = "2030c09a-7f63-5d83-885d-db604e0e9cc0"
+JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
+PowerModelsDistribution = "d7431456-977f-11e9-2de3-97ff7677985e"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+SimpleWeightedGraphs = "47aef6b3-ad0c-573a-a1e2-d07658019622"

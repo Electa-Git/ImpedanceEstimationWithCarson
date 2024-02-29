@@ -1,0 +1,47 @@
+!!!!!!!!!! SELECTED UNDERGROUND CABLES !!!!!!!!!
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!! 4-wire aluminium: 2 underground examples !!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+New LineSpacing.UGLV_240Al_XLPE/NYL/PVC_UG_4w_spacing nconds=4 nphases=3 x=[0, -26.799999999999997, -26.799999999999997, 0]  h=[1026.8, 1026.8, 1000, 1000]  units=mm ! [A, B, C, N]
+New LineSpacing.UGLV_185Al_XLPE/NYL/PVC_UG_4w_spacing nconds=4 nphases=3 x=[0, -24.6, -24.6, 0]  h=[1024.6, 1024.6, 1000, 1000]  units=mm ! [A, B, C, N]
+! the difference between the two above is really minimal
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!! 2-wire aluminium: 2 underground examples !!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+New LineSpacing.UGLV_185Al_XLPE/NYL/PVC_UG_2w_spacing nconds=2 nphases=1 x=[-24.6, 0]  h=[1000, 1000]  units=mm ! [P, N]
+New LineSpacing.UGSC_16Al_XLPE/PVC_UG_2w_spacing nconds=2 nphases=1 x=[-9.0, 0]  h=[1000, 1000]  units=mm ! [P, N]
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! 4-wire copper: only one underground example !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+New LineSpacing.UGLV_120Cu_XLPE/NYL/PVC_UG_4w_spacing nconds=4 nphases=3 x=[0, -20.4, -20.4, 0]  h=[1020.4, 1020.4, 1000, 1000]  units=mm ! [A, B, C, N]
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!! 2-wire copper: two underground examples !!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+New LineSpacing.UGSC_16Cu_XLPE/NYL/PVC_UG_2w_spacing nconds=2 nphases=1 x=[-10.6, 0]  h=[1000, 1000]  units=mm ! [P, N]
+New LineSpacing.UGSC_25Cu_XLPE/NYL/PVC_UG_2w_spacing nconds=2 nphases=1 x=[-12.2, 0]  h=[1000, 1000]  units=mm ! [P, N]
+
+
+!!!!!!!!!! SELECTED OVERHEAD LINES !!!!!!!!! not sure about the materials of these ones
+
+
+New LineSpacing.ABC4X95_OH_4w_spacing nconds=4 nphases=3 x=[0, -15.3, -15.3, 0]  h=[5815.3, 5815.3, 5800, 5800]  units=mm ! [A, B, C, N]
+New LineSpacing.TW4X16_OH_4w_spacing nconds=4 nphases=3 x=[0, -7.01, -7.01, 0]  h=[5807.01, 5807.01, 5800, 5800]  units=mm ! [A, B, C, N]
+
+New LineSpacing.ABC2x16_OH_2w_spacing nconds=2 nphases=1 x=[-7.5, 0]  h=[5800, 5800]  units=mm ! [P, N]
+New LineSpacing.TW2X16_OH_2w_spacing nconds=2 nphases=1 x=[-7.01, 0]  h=[5800, 5800]  units=mm ! [P, N]
+
+
+!!!!!!!! NOTES
+! I avoided the "HV" codes because they are for medium voltage?
+! UGSC means underground service cables...?
+! what are all those planets and fruits that have no spacing??
+! for the network data, do we pick `enwl_4w_embedded` ones, or  `enwl_4w`? is there any difference other than the linecode?
+! - I am only gonna put the ntw 1, fdr 1  and the 30 load one??

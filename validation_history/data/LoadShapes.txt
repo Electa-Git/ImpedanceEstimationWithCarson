@@ -1,0 +1,7 @@
+! Imported from LoadShapes.txt, with modified directory
+! --------------------------------------------------------------------------------------------------------------
+New Loadshape.Shape_1 npts=288 interval=0.0833 mult=(file=Load1_5min.csv) useactual=false
+New Loadshape.Shape_2 npts=288 interval=0.0833 mult=(file=Load1_5min.csv) useactual=false
+New Loadshape.Shape_3 npts=288 interval=0.0833 mult=(file=Load1_5min.csv) useactual=false
+New Loadshape.Shape_4 npts=288 interval=0.0833 mult=(file=Load1_5min.csv) useactual=false
+! --------------------------------------------------------------------------------------------------------------

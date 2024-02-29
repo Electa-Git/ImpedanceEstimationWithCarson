@@ -1,0 +1,34 @@
+! Simple network by Marta (should add some explanation)
+!
+! calculated with forward carson assuming:
+! μ = 1 # relative permeability of bth copper and alu is 1
+! ρ = 10 # Al
+! α = .00429 # Al
+! T = 55
+! A_p_1 = [50, 50, 50, 50] # mm²
+! x_1 = [0, 500, 1000, 1500] # mm
+! y_1 = [0, 0, 0, 0] # mm
+! A_p_2 = [30, 30] # mm²
+! x_2 = [0, 200]
+! y_2 = [0, 0]
+!
+! with the in-house function:
+! 
+! r_lc3, x_lc3 = forward_carson_linecode_generation(A_p_1, x_1, y_1, ρ, α, T, μ) # linecode for the 4-wire bits
+! r_lc6, x_lc6 = forward_carson_linecode_generation(A_p_2, x_2, y_2, ρ, α, T, μ)
+
+Clear
+Set DefaultBaseFreq=50
+New Circuit.ENWL_network_5_Feeder_1_4wire BasekV=0.416 pu=1.00 ISC3=10 ISC1=10
+New Reactor.Grounding phases=1 bus1=sourcebus.4 bus2=sourcebus.0 R=0.0 X=1E-10
+
+Redirect LineCode.txt
+Redirect Lines.txt
+Redirect LoadShapes.txt
+Redirect Loads.txt
+
+New Energymeter.substation Element=Line.LINE1 1
+
+Set mode=Daily number=288 stepsize=5m
+Solve
+Closedi

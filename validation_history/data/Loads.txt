@@ -1,0 +1,6 @@
+! Imported from Loads.txt, with modified neutral terminal
+! ----------------------------------------------------------------------
+New Load.LOAD1 Phases=1 Bus1=8.1.4 kV=0.23 kW=1  PF=0.95 Daily=Shape_1
+New Load.LOAD2 Phases=1 Bus1=1.2.4 kV=0.23 kW=1  PF=0.95 Daily=Shape_2
+New Load.LOAD3 Phases=1 Bus1=9.3.4 kV=0.23 kW=1  PF=0.95 Daily=Shape_3
+! ----------------------------------------------------------------------
