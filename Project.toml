@@ -1,6 +1,6 @@
 name = "DataDriveImpedanceEstimationWithCarson"
 uuid = "7a5debc2-ed2d-4031-bd1e-35d3af03268b"
-authors = ["Marta Vanin <marta.vanin@kuleuven.be>", "Rahmat Heidari <heidari.rahmat@gmail.com">, "Frederik Geth <frederik.geth@gridqube.come>"]
+authors = ["Marta Vanin <marta.vanin@kuleuven.be>", "Rahmat Heidari <heidari.rahmat@gmail.com>", "Frederik Geth <frederik.geth@gridqube.com>"]
 version = "0.1.0"
 
 [deps]
