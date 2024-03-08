@@ -1,10 +1,15 @@
 module DataDrivenImpedanceEstimationWithCarson
 
+    import DataFrames as _DF
     import Distributions as _DST
     import Graphs, SimpleWeightedGraphs
     import InfrastructureModels as _IM
     import JuMP
     import PowerModelsDistribution as _PMD
+
+    const DATA_DIR = joinpath(dirname(@__DIR__), "data")
+    const NTW_DATA_DIR = joinpath(DATA_DIR, "network_data")
+    const LINECODE_DATA_DIR = joinpath(DATA_DIR, "linecode_library")
 
     include("core/constraint.jl")
     include("core/objective.jl")

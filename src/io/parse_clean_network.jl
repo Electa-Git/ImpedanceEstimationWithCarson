@@ -9,7 +9,7 @@ function clean_4w_data!(ntw::Dict, profiles_df::_DF.DataFrame; eng::Dict=Dict{St
     end
     assign_load_to_parquet_id!(ntw, profiles_df)
     #### below removes virtual voltage source (but the transformer I removed in the eng model, thus beforehand)
-    vsource_branch, vsource_bus, new_slackbus = find_voltage_source_branch_bus(ntw) # ← imported from src/core/benchmarking.jl
+    vsource_branch, vsource_bus, new_slackbus = find_voltage_source_branch_bus(ntw) 
     ntw["gen"]["1"]["gen_bus"] = new_slackbus
     ntw["bus"]["$new_slackbus"] = deepcopy(ntw["bus"]["$vsource_bus"])
     ntw["bus"]["$new_slackbus"]["bus_i"] = new_slackbus
@@ -17,6 +17,15 @@ function clean_4w_data!(ntw::Dict, profiles_df::_DF.DataFrame; eng::Dict=Dict{St
     delete!(ntw["branch"], vsource_branch)
     delete!(ntw["bus"], "$vsource_bus")
     return ntw
+end
+
+function find_voltage_source_branch_bus(math)
+    for (b, branch) in math["branch"]
+        if branch["source_id"] == "voltage_source.source"
+            return b, branch["f_bus"], branch["t_bus"]
+        end
+    end
+    return error()
 end
 """
 Goes get the length of the branches, which are stored in the engineering model
