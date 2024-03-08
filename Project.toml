@@ -1,9 +1,10 @@
-name = "DataDriveImpedanceEstimationWithCarson"
+name = "DataDrivenImpedanceEstimationWithCarson"
 uuid = "7a5debc2-ed2d-4031-bd1e-35d3af03268b"
 authors = ["Marta Vanin <marta.vanin@kuleuven.be>", "Rahmat Heidari <heidari.rahmat@gmail.com>", "Frederik Geth <frederik.geth@gridqube.com>"]
 version = "0.1.0"
 
 [deps]
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
 InfrastructureModels = "2030c09a-7f63-5d83-885d-db604e0e9cc0"
