@@ -1,7 +1,7 @@
 import Random as _RAN
 
-function prepare_math_eng_data()
-    eng = _PMD.parse_file(_IMP.NTW_DATA_DIR*"/30load-feeder/Master_ug.dss", data_model = _PMD.ENGINEERING, transformations=[_PMD.transform_loops!,_PMD.remove_all_bounds!])
+function prepare_math_eng_data(feeder_name::String="30load-feeder")
+    eng = _PMD.parse_file(_IMP.NTW_DATA_DIR*"/"*feeder_name*"/Master_ug.dss", data_model = _PMD.ENGINEERING, transformations=[_PMD.transform_loops!,_PMD.remove_all_bounds!])
     _IMP.rm_enwl_transformer!(eng)
     _IMP.reduce_enwl_lines_eng!(eng)
     eng["settings"]["sbase_default"] = 1

@@ -16,7 +16,7 @@ function run_impedance_estimation_ug_noshunt_30_load_case(result_path::String, i
     # profiles = CSV.read(_IMP.DATA_DIR*"/nrel_profiles.csv", _DF.DataFrame, ntasks = 1)
     # pf_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 100., "print_level"=>0 )
 
-    data, eng, z_pu = prepare_math_eng_data();
+    data, eng, z_pu = prepare_math_eng_data(feeder_name="30load-feeder");
 
     ###################################
     ### CHANGE LINECODES OF SERVICE CABLES TO 2-WIRE (EVERYHING IS 4-WIRE IN THE BEGINNING BY CONSTRUCTION)
@@ -115,7 +115,7 @@ function run_impedance_estimation_ug_noshunt_30_load_case(result_path::String, i
 
     sol = _IMP.solve_imp_est_carson(mn_data, ie_solver)
     sol = _IMP.build_rx_sol_dict(mn_data, sol) # completes solution information getting together things that are not reported
-    imp_est = _IMP.get_cumulative_impedance_of_loads_from_sol(mn_data, sol, false)
+    imp_est  = _IMP.get_cumulative_impedance_of_loads_from_sol(mn_data, sol, false)
     imp_true = _IMP.get_cumulative_impedance_of_loads_from_data(mn_data, true)
 
     est_volts = _IMP.build_estimated_volts_dataframe(sol, mn_data, scenario_id)

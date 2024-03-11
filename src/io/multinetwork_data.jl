@@ -40,7 +40,7 @@ function build_multinetwork_dsse_data(data::Dict, df::_DF.DataFrame, pf_solver, 
         add_pf_result_to_mn_data!(mn_data["nw"]["$ts"], pf_results)
 
         # converts the powerflow results into (noisy or not) measurements
-        add_measurements!(data, pf_results, σ_v, σ_d, σ_g, add_noise = add_noise, seed = seed, include_transfo_meas = true)
+        add_measurements!(data, pf_results, σ_v, σ_d, σ_g, add_noise = add_noise, seed = seed, include_transfo_meas = false)
 
         # store this timestep in multinetwork dict
         mn_data["nw"]["$ts"]["meas"] = deepcopy(data["meas"]);

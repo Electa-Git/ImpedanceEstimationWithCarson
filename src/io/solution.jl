@@ -229,7 +229,7 @@ function build_linecode_results(sol, mn_data, seed)
     end
     length_dict = Dict{String, Any}()
     for (b, branch) in sol["solution"]["nw"]["1"]["branch"]
-        length_dict[b] = Dict("length_est" => branch["l"],
+        length_dict[b] = Dict("length_est" => branch["l"]*1000, # ×1000 so they are both in meters
                               "length_true" => mn_data["nw"]["1"]["branch"][b]["orig_length"])
     end
     return df_linecode, JSON.json(length_dict)
@@ -253,7 +253,7 @@ function build_summary_results_csv(case, result_path, other_string, unique_id, s
     lb = use_length_bounds ? length_bounds_percval : false
     push!(summary_df, [seed, lb, t_start, t_end, add_meas_noise, power_mult, A_p_bounds, dist_bounds, r_ac_error, sol["solve_time"], sol["termination_status"], sol["objective"]])
     if save_as_csv
-        summary_df |> CSV.write("$(result_path)_$(case)_real_volts_scenario_$(seed)_$(other_string)_$(unique_id).csv")
+        summary_df |> CSV.write("$(result_path)_$(case)_general_summary_scenario_$(seed)_$(other_string)_$(unique_id).csv")
     end
     return summary_df
 end
