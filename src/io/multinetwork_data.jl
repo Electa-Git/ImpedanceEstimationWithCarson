@@ -1,4 +1,4 @@
-function build_multinetwork_dsse_data(data::Dict, df::_DF.DataFrame, pf_solver, σ_v::Float64, σ_d::Float64, σ_g::Float64; t_start::Int=1, t_end::Int=20, add_noise::Bool=false, seed::Int64=2, power_mult::Float64=1.0)::Dict
+function build_multinetwork_dsse_data(data::Dict, df::_DF.DataFrame, pf_solver, σ_v::Float64, σ_d::Float64, σ_g::Float64; t_start::Int=1, t_end::Int=20, add_noise::Bool=false, seed::Int64=2, power_mult::Float64=1.0)
 
     mn_data = Dict{String, Any}()
     mn_data["multinetwork"] = true
@@ -8,6 +8,8 @@ function build_multinetwork_dsse_data(data::Dict, df::_DF.DataFrame, pf_solver, 
     for key in ["name", "map", "se_settings", "data_model", "bus_lookup", "per_unit"]
         if haskey(data, key) mn_data[key] = data[key] end
     end
+
+    real_volts = _DF.DataFrame(fill([], length(data["load"])+2), vcat(["load_$(l)_ph_$(load["connections"][1])" for (l,load) in data["load"]], ["scenario_id", "time_step"]))
 
     for (ts_id, ts) in enumerate(t_start:t_end)
         
@@ -32,6 +34,8 @@ function build_multinetwork_dsse_data(data::Dict, df::_DF.DataFrame, pf_solver, 
         # converts vr and vi to vm (phase to neutral)
         pf_solution_to_voltage_magnitudes!(pf_results) 
 
+        push!(real_volts, vcat([pf_results["solution"]["bus"]["$(load["load_bus"])"]["vm"][1] for (l,load) in data["load"]], [seed, ts]))
+
         # adds the powerflow results (P, Q, |U|) of this timestep on the mn dict, for future reference/comparison
         add_pf_result_to_mn_data!(mn_data["nw"]["$ts"], pf_results)
 
@@ -39,10 +43,10 @@ function build_multinetwork_dsse_data(data::Dict, df::_DF.DataFrame, pf_solver, 
         add_measurements!(data, pf_results, σ_v, σ_d, σ_g, add_noise = add_noise, seed = seed, include_transfo_meas = true)
 
         # store this timestep in multinetwork dict
-        mn_data["nw"]["$ts"]["meas"] = deepcopy(data["meas"])
+        mn_data["nw"]["$ts"]["meas"] = deepcopy(data["meas"]);
 
     end
-    return mn_data
+    return mn_data, real_volts
 end
 
 function build_multinetwork_dsse_data_with_shunts(data::Dict, df::_DF.DataFrame, pf_solver, σ_v::Float64, σ_d::Float64, σ_g::Float64; t_start::Int=1, t_end::Int=20, add_noise::Bool=false, seed::Int64=2, power_mult::Float64=1.0)::Dict

@@ -54,8 +54,8 @@ function variable_cross_section_and_gmr(pm::_PMD.AbstractExplicitNeutralIVRModel
     if bounded
         for (i,linecode) in _PMD.ref(pm, 1, :linecode_map)
             for idx in conn[i]
-                   haskey(linecode, "A_p_max") ?  JuMP.set_upper_bound(A_p[i][idx], linecode["A_p_max"][idx]) : JuMP.set_upper_bound(A_p[i][idx],  200.0) #
-                 if haskey(linecode, "A_p_min")    JuMP.set_lower_bound(A_p[i][idx], linecode["A_p_min"][idx]) end # otherwise takes the one stated in the definition above
+                   haskey(linecode, "A_p_max") ? JuMP.set_upper_bound(A_p[i][idx], linecode["A_p_max"][idx]) : JuMP.set_upper_bound(A_p[i][idx],  200.0) #
+                if haskey(linecode, "A_p_min")   JuMP.set_lower_bound(A_p[i][idx], linecode["A_p_min"][idx]) end # otherwise takes the one stated in the definition above
             end
         end
     end

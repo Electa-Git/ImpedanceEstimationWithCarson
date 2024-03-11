@@ -8,21 +8,28 @@ function carson_constants()
 end
 
 function build_rx_sol_dict(mn_data::Dict, sol::Dict)
-    ρ = mn_data["nw"]["1"]["rho"]["rho_value"]
-    α = mn_data["nw"]["1"]["alpha"]["alpha_value"]
-    T = mn_data["nw"]["1"]["temperature"]["temperature_value"]
+
+    if haskey(mn_data["nw"]["1"]["rho"], "rho_value")
+        ρ = mn_data["nw"]["1"]["rho"]["rho_value"]
+        α = mn_data["nw"]["1"]["alpha"]["alpha_value"]
+        T = mn_data["nw"]["1"]["temperature"]["temperature_value"]
+    end
 
     c₁, c₂, r_pq = carson_constants()
 
-    for (_, lc) in sol["solution"]["nw"]["1"]["linecode_map"]
+    for (lc_id, lc) in sol["solution"]["nw"]["1"]["linecode_map"]
         A_p = lc["A_p"] 
         gmr = lc["gmr"]
         dist = [k for k in keys(lc) if occursin("dij", k)]
         Dij = lc[dist[1]]
 
         r_init = fill(r_pq, size(A_p))
-        lc["r"] = r_init.+diagm([ρ/A*(1+(α*(T-20))) for A in A_p])
-        lc["r"]
+        if haskey(mn_data["nw"]["1"]["rho"], "rho_value")
+            lc["r"] = r_init.+_LA.diagm([ρ/A*(1+(α*(T-20))) for A in A_p])
+        else
+            display("lc is $lc")
+            lc["r"] = r_init.+_LA.diagm([r_ac for r_ac in mn_data["nw"]["1"]["linecode_map"][parse(Int, lc_id)]["r_ac"]])
+        end
     
         x = zeros(size(A_p)[1], size(A_p)[1])
         for c in CartesianIndices(x)
@@ -180,4 +187,73 @@ function get_cumulative_impedance_of_loads_from_sol(mn_data::Dict, sol::Dict, di
         load_dist_dict["$load"]["Zc_est"] = sqrt(load_dist_dict["$load"]["Rc_est"]^2+load_dist_dict["$load"]["Xc_est"]^2)
     end
     return load_dist_dict
+end
+
+function drop_results(case, result_path, other_string, summary_df, sol, mn_data, t_start, t_end, seed, add_meas_noise, power_mult, A_p_bounds, dist_bounds, r_ac_error, use_length_bounds, length_bounds_percval, imp_est, imp_true, real_volts, est_volts; save_summary::Bool=true)
+    
+    unique_id = _RAN.randstring(5)
+    
+    # drop impedances as JSONs
+    imp_est  = JSON.json(imp_est)
+    imp_true = JSON.json(imp_true)
+    open("$(result_path)_$(case)_imp_est_scenario_$(seed)_$(other_string)_$(unique_id).json","w") do f 
+        write(f, imp_est) 
+    end
+    open("$(result_path)_$(case)_imp_true_scenario_$(seed)_$(other_string)_$(unique_id).json","w") do f 
+        write(f, imp_true) 
+    end
+
+    # drop voltages as CSVs
+    real_volts |> CSV.write("$(result_path)_$(case)_real_volts_scenario_$(seed)_$(other_string)_$(unique_id).csv")
+    est_volts |> CSV.write("$(result_path)_$(case)_est_volts_scenario_$(seed)_$(other_string)_$(unique_id).csv")
+
+    # drop general result summary
+    summary_df = build_summary_results_csv(case, result_path, other_string, unique_id, summary_df, sol, t_start::Int, t_end::Int,seed, add_meas_noise, power_mult, A_p_bounds, dist_bounds, r_ac_error, use_length_bounds, length_bounds_percval, save_summary)
+    if save_summary  summary_df |> CSV.write("$(result_path)_$(case)_general_summary_scenario_$(seed)_$(other_string)_$(unique_id).csv") end
+
+    # linecode estimation result
+    df_linecode, length_dict = build_linecode_results(sol, mn_data, seed)
+    df_linecode |> CSV.write("$(result_path)_$(case)_linecode_results_scenario_$(seed)_$(other_string)_$(unique_id).csv")
+
+    open("$(result_path)_$(case)_length_dict_scenario_$(seed)_$(other_string)_$(unique_id)","w") do f 
+        write(f, length_dict) 
+    end
+
+end
+
+function build_linecode_results(sol, mn_data, seed)
+    df_linecode = _DF.DataFrame(fill([], 7), ["linecode_id", "linecode_name", "A_p_est", "dist_est", "x_est", "r_est", "scenario_id"])
+    for (l, linecode) in sol["solution"]["nw"]["1"]["linecode_map"]
+        dij = haskey(linecode, "dij_2w") ? "dij_2w" : "dij_4w" 
+        push!(df_linecode, [parse(Int, l), mn_data["nw"]["1"]["linecode_map"][parse(Int, l)]["name"], linecode["A_p"], linecode[dij], linecode["x"], linecode["r"], seed])
+    end
+    length_dict = Dict{String, Any}()
+    for (b, branch) in sol["solution"]["nw"]["1"]["branch"]
+        length_dict[b] = Dict("length_est" => branch["l"],
+                              "length_true" => mn_data["nw"]["1"]["branch"][b]["orig_length"])
+    end
+    return df_linecode, JSON.json(length_dict)
+end
+
+function build_estimated_volts_dataframe(sol::Dict, mn_data::Dict, seed::Int)
+    est_volts = _DF.DataFrame(fill([], length(mn_data["nw"]["1"]["load"])+2), vcat(["load_$(l)_ph_$(load["connections"][1])" for (l,load) in mn_data["nw"]["1"]["load"]], ["scenario_id", "time_step"]))
+    for (n, nw) in sol["solution"]["nw"]
+        for (i, bus) in nw["bus"]
+            bus["vm"] = sqrt.( (bus["vr"][1:(end-1)] .- bus["vr"][end]).^2 + (bus["vi"][1:(end-1)] .- bus["vi"][end]).^2 )
+        end
+        push!(est_volts, vcat([nw["bus"]["$(load["load_bus"])"]["vm"][1] for (l,load) in mn_data["nw"]["1"]["load"]], [seed, parse(Int, n)]))
+    end
+    return est_volts
+end
+
+function build_summary_results_csv(case, result_path, other_string, unique_id, summary_df, sol, t_start::Int, t_end::Int,seed, add_meas_noise, power_mult, A_p_bounds, dist_bounds, r_ac_error, use_length_bounds, length_bounds_percval, save_as_csv)
+    if isempty(summary_df)
+        summary_df = _DF.DataFrame(fill([], 12), ["scenario_id", "length_bounds", "t_start", "t_end", "meas_noise", "power_mult", "A_p_bounds", "dist_bounds", "r_ac_error", "solve_time", "solve_status", "objective"])
+    end
+    lb = use_length_bounds ? length_bounds_percval : false
+    push!(summary_df, [seed, lb, t_start, t_end, add_meas_noise, power_mult, A_p_bounds, dist_bounds, r_ac_error, sol["solve_time"], sol["termination_status"], sol["objective"]])
+    if save_as_csv
+        summary_df |> CSV.write("$(result_path)_$(case)_real_volts_scenario_$(seed)_$(other_string)_$(unique_id).csv")
+    end
+    return summary_df
 end

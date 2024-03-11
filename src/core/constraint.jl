@@ -132,8 +132,6 @@ function constraint_mc_current_balance(pm::_PMD.AbstractUnbalancedPowerModel, i:
     terminals_not_grounded_at_all = [(idx, t) for (idx,t) in enumerate(terminals) if !bus["grounded"][idx]] # the PMD way
     total_ungrounded_terminals = unique(vcat(imperfectly_grounded_terminals, terminals_not_grounded_at_all))
 
-    display("total_ungrounded_terminals are $total_ungrounded_terminals")
-
     Gt, Bt = _PMD._build_bus_shunt_matrices(pm, nw, terminals, bus_shunts)
 
     for (idx, t) in total_ungrounded_terminals
@@ -172,13 +170,11 @@ function carson_impedance_expressions(pm::_PMD.AbstractExplicitNeutralIVRModel)
     c₁, c₂, z_pu, r_pq = carson_constants(pm)
 
     # get materials properties
-    # TODO: build a separate one per linecode instead of assuming all same material
-
-    T = haskey(_PMD.ref(pm, 1, :temperature), "temperature_value") ? _PMD.ref(pm, 1, :temperature)["temperature_value"] : variable_temperature(pm) 
+    T = haskey(_PMD.ref(pm, 1, :temperature), "temperature_value") ? _PMD.ref(pm, 1, :temperature)["temperature_value"] : @info "Temperature value not given" 
     if haskey(_PMD.ref(pm, 1, :temperature), "temperature_value") @info "Temperature is being fixed at value $(_PMD.ref(pm, 1, :temperature)["temperature_value"]) °C" end
-    ρ = haskey(_PMD.ref(pm, 1, :rho), "rho_value") ? _PMD.ref(pm, 1, :rho)["rho_value"] : variable_rho(pm)
+    ρ = haskey(_PMD.ref(pm, 1, :rho), "rho_value") ? _PMD.ref(pm, 1, :rho)["rho_value"] : @info "rho value not given"
     if haskey(_PMD.ref(pm, 1, :rho), "rho_value") @info "ρ is being fixed at value $(_PMD.ref(pm, 1, :rho)["rho_value"])" end
-    α = haskey(_PMD.ref(pm, 1, :alpha), "alpha_value") ? _PMD.ref(pm, 1, :alpha)["alpha_value"] : variable_alpha(pm)
+    α = haskey(_PMD.ref(pm, 1, :alpha), "alpha_value") ? _PMD.ref(pm, 1, :alpha)["alpha_value"] : @info "alpha value not given"
     if haskey(_PMD.ref(pm, 1, :alpha), "alpha_value") @info "α is being fixed at value $(_PMD.ref(pm, 1, :alpha)["alpha_value"])" end
 
     # initialize expression containers
@@ -193,8 +189,13 @@ function carson_impedance_expressions(pm::_PMD.AbstractExplicitNeutralIVRModel)
         A_p = _PMD.var(pm, 1, :A_p, i) 
         gmr = _PMD.var(pm, 1, :gmr, i)
         Dij = _PMD.var(pm, 1, :dij, i)  
-    
-        _PMD.var(pm, 1, :r_ac)[i] = JuMP.@expression(pm.model, [ρ/A_p[i]*(1+(α*(T-20))) for i in 1:n_wires]) # NB: if material becomes variable, this is NLexpression!    
+        
+        if haskey(_PMD.ref(pm, 1, :linecode_map, i), "r_ac")     
+            @info "r_ac's are being fixed"
+            _PMD.var(pm, 1, :r_ac)[i] = _PMD.ref(pm, 1, :linecode_map, i)["r_ac"]
+        else
+            _PMD.var(pm, 1, :r_ac)[i] = JuMP.@expression(pm.model, [ρ/A_p[i]*(1+(α*(T-20))) for i in 1:n_wires])
+        end
 
         # build X matrix
         x = zeros(JuMP.NonlinearExpr, (n_wires, n_wires))
@@ -249,7 +250,7 @@ function constraint_mc_bus_voltage_drop(pm::_PMD.AbstractExplicitNeutralIVRModel
         n_wires = [val["n_wires"] for (key, val) in _PMD.ref(pm, 1, :linecode_map) if val["name"] == lc][1]
 
         r = fill(r_pq, (n_wires, n_wires))
-        r += diagm(_PMD.var(pm, 1, :r_ac, lc_id)) # TODO: make aux var for this one to streamline ad?
+        r += _LA.diagm(_PMD.var(pm, 1, :r_ac, lc_id)) # TODO: make aux var for this one to streamline ad?
         x = _PMD.var(pm, 1, :x, lc_id) # TODO: make aux var for this one to streamline ad?
 
         R = JuMP.@expression(pm.model, r.*l./z_pu)

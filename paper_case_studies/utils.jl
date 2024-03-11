@@ -1,3 +1,5 @@
+import Random as _RAN
+
 function prepare_math_eng_data()
     eng = _PMD.parse_file(_IMP.NTW_DATA_DIR*"/30load-feeder/Master_ug.dss", data_model = _PMD.ENGINEERING, transformations=[_PMD.transform_loops!,_PMD.remove_all_bounds!])
     _IMP.rm_enwl_transformer!(eng)
@@ -45,4 +47,17 @@ function prepare_math_eng_data()
 
     _IMP.add_length!(data, eng)
     return data, eng, z_pu
+end
+
+function make_all_branches_untrustworthy!(mn_data, eng)
+    for (k, val) in mn_data["nw"]["1"]["linecode_map"]
+        for (b, branch) in mn_data["nw"]["1"]["branch"] # all branch info useful for the model is stored in nw 1. Better than copying it to all nws, but there might be better ways still..
+            branch["untrustworthy_branch"] = true # if not untrustworthy, we could fix the impedance. Default assumption is all are untrustworthy
+            if eng["line"][branch["name"]]["linecode"] == val["name"]
+                branch["orig_linecode"] = val["name"]
+                branch["linecode_id"] = k
+            end
+        end
+    end
+    return mn_data
 end

@@ -210,7 +210,7 @@ end
 function carson_constants()
     c₁ = 3.28084e-3
     c₂ = 8.0252
-    r_pq = 0.049348 # not a variable at all --> TODO explain in the paper and make a table of the number of variables
+    r_pq = 0.049348 
     return c₁, c₂, r_pq
 end
 
