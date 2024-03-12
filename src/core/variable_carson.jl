@@ -4,7 +4,7 @@ SO expect the result to be in km!!
 """
 function variable_segment_length(pm::_PMD.AbstractExplicitNeutralIVRModel; bounded::Bool = true, report::Bool=true)
 
-    nw = 1 # variable only defined at the first timestep is what this is. not elegant, to change, but just to be sure in the meantime
+    nw = 1 # variable only defined at the first timestep
 
     l = _PMD.var(pm, nw)[:l] = Dict(i => JuMP.@variable(pm.model,
                 base_name="length_$(i)",
@@ -17,7 +17,7 @@ function variable_segment_length(pm::_PMD.AbstractExplicitNeutralIVRModel; bound
     if bounded
         for (i,branch) in _PMD.ref(pm, nw, :branch)
             if _PMD.ref(pm, nw, :branch, i, "untrustworthy_branch")
-                haskey(branch, "l_max") ?  JuMP.set_upper_bound(l[i], branch["l_max"]) : JuMP.set_upper_bound(l[i],  100.0) # upper bound is 10 km
+                haskey(branch, "l_max") ?  JuMP.set_upper_bound(l[i], branch["l_max"]) : JuMP.set_upper_bound(l[i],  10.0) # upper bound is 10 km
                 if haskey(branch, "l_min") JuMP.set_lower_bound(l[i], branch["l_min"]) end # otherwise takes the one stated in the definition above
             end
         end
@@ -31,15 +31,15 @@ Only one variable per conductor per linecode
 """
 function variable_cross_section_and_gmr(pm::_PMD.AbstractExplicitNeutralIVRModel, μ; bounded::Bool = true, report::Bool=true)
 
-    nw = 1 # variable only defined at the first timestep is what this is. not elegant, to change, but just to be sure in the meantime
+    nw = 1 # variable only defined at the first timestep
 
     conn = Dict( i => [wire for wire in 1:l["n_wires"]] for (i,l) in _PMD.ref(pm, 1, :linecode_map))
     
     A_p = _PMD.var(pm, nw)[:A_p] = Dict(i => JuMP.@variable(pm.model,
                 [t in conn[i]],
                 base_name="A_p_$(i)",
-                lower_bound = 5, # 
-                start = _PMD.comp_start_value(linecode, "A_p_start", t, 30.) #
+                lower_bound = 3, # 
+                start = _PMD.comp_start_value(linecode, "A_p_start", t, 10.) #
                 ) for (i, linecode) in _PMD.ref(pm, 1, :linecode_map) 
             ) 
 
@@ -54,7 +54,7 @@ function variable_cross_section_and_gmr(pm::_PMD.AbstractExplicitNeutralIVRModel
     if bounded
         for (i,linecode) in _PMD.ref(pm, 1, :linecode_map)
             for idx in conn[i]
-                   haskey(linecode, "A_p_max") ? JuMP.set_upper_bound(A_p[i][idx], linecode["A_p_max"][idx]) : JuMP.set_upper_bound(A_p[i][idx],  200.0) #
+                   haskey(linecode, "A_p_max") ? JuMP.set_upper_bound(A_p[i][idx], linecode["A_p_max"][idx]) : JuMP.set_upper_bound(A_p[i][idx],  350.0) #
                 if haskey(linecode, "A_p_min")   JuMP.set_lower_bound(A_p[i][idx], linecode["A_p_min"][idx]) end # otherwise takes the one stated in the definition above
             end
         end
@@ -73,9 +73,9 @@ end
 """
 coordinates are in mm
 """
-function variable_coordinates_and_distances(pm::_PMD.AbstractExplicitNeutralIVRModel; report::Bool=true) 
+function variable_coordinates_and_distances(pm::_PMD.AbstractExplicitNeutralIVRModel; bounded::Bool=true, report::Bool=true) 
 
-    nw = 1 # variable only defined at the first timestep is what this is. not elegant, to change, but just to be sure in the meantime
+    nw = 1 # variable only defined at the first timestep
 
     two_w   = [ i for (i,l) in _PMD.ref(pm, nw, :linecode_map) if l["n_wires"] == 2 ]
     three_w = [ i for (i,l) in _PMD.ref(pm, nw, :linecode_map) if l["n_wires"] == 3 ]
@@ -126,8 +126,8 @@ function variable_coordinates_and_distances(pm::_PMD.AbstractExplicitNeutralIVRM
 
     dij_4w = Dict(i => JuMP.@variable(pm.model,
                 [j = 1:6],
-                base_name="dij_3w_code_$(i)",
-                lower_bound = 10,
+                base_name="dij_4w_code_$(i)",
+                lower_bound = 8,
                 upper_bound =  2e3, 
                 ) for (i,l) in _PMD.ref(pm, 1, :linecode_map) if i ∈ four_w
             )
@@ -150,6 +150,35 @@ function variable_coordinates_and_distances(pm::_PMD.AbstractExplicitNeutralIVRM
         end
     end
 
+    if bounded
+        for (i,linecode) in _PMD.ref(pm, 1, :linecode_map) 
+            conns = linecode["n_wires"]
+            if i ∈ vcat(three_w, four_w)
+                for idx in 1:conns-1 
+                    if haskey(linecode, "xcoord_max") JuMP.set_upper_bound(xcoord[i][idx], linecode["xcoord_max"][idx]) end
+                    if haskey(linecode, "xcoord_min") JuMP.set_lower_bound(xcoord[i][idx], linecode["xcoord_min"][idx]) end 
+                    if haskey(linecode, "ycoord_max") JuMP.set_upper_bound(ycoord[i][idx], linecode["ycoord_max"][idx]) end
+                    if haskey(linecode, "ycoord_min") JuMP.set_lower_bound(ycoord[i][idx], linecode["ycoord_min"][idx]) end 
+                end
+                if i ∈ vcat(four_w)
+                    @info "Please mind the `distance_indices` if you add bounds on the dij's"
+                    for idx in 1:6
+                        if haskey(linecode, "dij_4w_max") JuMP.set_upper_bound(dij_4w[i][idx], linecode["dij_4w_max"][idx]) end
+                        if haskey(linecode, "dij_4w_min") JuMP.set_lower_bound(dij_4w[i][idx], linecode["dij_4w_min"][idx]) end     
+                    end
+                else
+                    for idx in 1:3
+                        if haskey(linecode, "dij_3w_max") JuMP.set_upper_bound(dij_3w[i][idx], linecode["dij_3w_max"][idx]) end
+                        if haskey(linecode, "dij_3w_min") JuMP.set_lower_bound(dij_3w[i][idx], linecode["dij_3w_min"][idx]) end     
+                    end
+                end
+            else
+                if haskey(linecode, "dij_2w_max") JuMP.set_upper_bound(dij_2w[i][1], linecode["dij_2w_max"]) end
+                if haskey(linecode, "dij_2w_min") JuMP.set_lower_bound(dij_2w[i][1], linecode["dij_2w_min"]) end 
+            end
+        end
+    end
+
     report_idx_2w_dij = [i for (i,l) in _PMD.ref(pm, 1, :linecode_map) if i ∈ two_w]
     report_idx_3w_dij = [i for (i,l) in _PMD.ref(pm, 1, :linecode_map) if i ∈ three_w]
     report_idx_4w_dij = [i for (i,l) in _PMD.ref(pm, 1, :linecode_map) if i ∈ four_w]
@@ -165,7 +194,7 @@ end
 
 function variable_bus_shunt_admittance(pm::_PMD.AbstractExplicitNeutralIVRModel; bounded::Bool=true, report::Bool=true)
 
-    nw = 1 # variable only defined at the first timestep is what this is. not elegant, to change, but just to be sure in the meantime
+    nw = 1 # variable only defined at the first timestep
 
     g_sh = _PMD.var(pm, nw)[:g_sh] = Dict(i => JuMP.@variable(pm.model,
                 base_name="g_sh_$(i)",
@@ -221,6 +250,6 @@ function carson_constants(pm)
     z_pu = _PMD.ref(pm, 1, :settings)["z_pu"]
     c₁ = 3.28084e-3
     c₂ = 8.0252
-    r_pq = 0.049348 # not a variable at all --> TODO explain in the paper and make a table of the number of variables
+    r_pq = 0.049348 
     return c₁, c₂, z_pu, r_pq
 end
