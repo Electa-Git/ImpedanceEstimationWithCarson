@@ -193,8 +193,11 @@ function carson_impedance_expressions(pm::_PMD.AbstractExplicitNeutralIVRModel)
         if haskey(_PMD.ref(pm, 1, :linecode_map, i), "r_ac")     
             @info "r_ac's are being fixed"
             _PMD.var(pm, 1, :r_ac)[i] = _PMD.ref(pm, 1, :linecode_map, i)["r_ac"]
+        elseif haskey(_PMD.ref(pm, 1, :linecode_map, i), "r_material")
+            @info "material contribution to r_ac is being fixed"
+            _PMD.var(pm, 1, :r_ac)[i] = JuMP.@expression(pm.model, [_PMD.ref(pm, 1, :linecode_map, i)["r_material"][w]/A_p[w] for w in 1:n_wires])
         else
-            _PMD.var(pm, 1, :r_ac)[i] = JuMP.@expression(pm.model, [ρ/A_p[i]*(1+(α*(T-20))) for i in 1:n_wires])
+            _PMD.var(pm, 1, :r_ac)[i] = JuMP.@expression(pm.model, [ρ/A_p[w]*(1+(α*(T-20))) for w in 1:n_wires])
         end
 
         # build X matrix

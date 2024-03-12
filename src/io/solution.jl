@@ -26,9 +26,10 @@ function build_rx_sol_dict(mn_data::Dict, sol::Dict)
         r_init = fill(r_pq, size(A_p))
         if haskey(mn_data["nw"]["1"]["rho"], "rho_value")
             lc["r"] = r_init.+_LA.diagm([ρ/A*(1+(α*(T-20))) for A in A_p])
-        else
-            display("lc is $lc")
+        elseif haskey(mn_data["nw"]["1"]["linecode_map"][parse(Int, lc_id)], "r_ac")
             lc["r"] = r_init.+_LA.diagm([r_ac for r_ac in mn_data["nw"]["1"]["linecode_map"][parse(Int, lc_id)]["r_ac"]])
+        elseif haskey(mn_data["nw"]["1"]["linecode_map"][parse(Int, lc_id)], "r_material")
+            lc["r"] = r_init.+_LA.diagm([mn_data["nw"]["1"]["linecode_map"][parse(Int, lc_id)]["r_material"][i]/A_p[i] for i in 1:length(A_p)])
         end
     
         x = zeros(size(A_p)[1], size(A_p)[1])
@@ -215,7 +216,7 @@ function drop_results(case, result_path, other_string, summary_df, sol, mn_data,
     df_linecode, length_dict = build_linecode_results(sol, mn_data, seed)
     df_linecode |> CSV.write("$(result_path)_$(case)_linecode_results_scenario_$(seed)_$(other_string)_$(unique_id).csv")
 
-    open("$(result_path)_$(case)_length_dict_scenario_$(seed)_$(other_string)_$(unique_id)","w") do f 
+    open("$(result_path)_$(case)_length_dict_scenario_$(seed)_$(other_string)_$(unique_id).json","w") do f 
         write(f, length_dict) 
     end
 
