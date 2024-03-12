@@ -1,7 +1,7 @@
 import Random as _RAN
 
-function prepare_math_eng_data(;feeder_name::String="30load-feeder")
-    eng = _PMD.parse_file(_IMP.NTW_DATA_DIR*"/"*feeder_name*"/Master_ug.dss", data_model = _PMD.ENGINEERING, transformations=[_PMD.transform_loops!,_PMD.remove_all_bounds!])
+function prepare_math_eng_data(;feeder_name::String="30load-feeder", oh_or_ug::String="ug")
+    eng = _PMD.parse_file(_IMP.NTW_DATA_DIR*"/"*feeder_name*"/Master_$(oh_or_ug).dss", data_model = _PMD.ENGINEERING, transformations=[_PMD.transform_loops!,_PMD.remove_all_bounds!])
     _IMP.rm_enwl_transformer!(eng)
     _IMP.reduce_enwl_lines_eng!(eng)
     eng["settings"]["sbase_default"] = 1
@@ -12,7 +12,7 @@ function prepare_math_eng_data(;feeder_name::String="30load-feeder")
     _IMP.clean_4w_data!(data, profiles, merge_buses_diff_linecodes = false, eng = eng)
     _PMD.add_start_vrvi!(data)
     
-    _IMP.make_loadbuses_loadbranches_singlephase!(data) # TODO: or change .dss file?
+    _IMP.make_loadbuses_loadbranches_singlephase!(data) 
     
     for (_,bus) in data["bus"]
         if bus["bus_type"] != 3 && !startswith(bus["source_id"], "transformer") && bus["index"] ∉ load_buses 

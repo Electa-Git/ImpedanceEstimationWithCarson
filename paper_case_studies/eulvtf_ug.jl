@@ -10,32 +10,33 @@ include("utils.jl")
 # 1) solver settings
 # 2) bounds on the conductor distances?
 
-# ie_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 500., "max_iter" => 3000)
+ie_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 500., "max_iter" => 3000)
 # profiles = CSV.read(_IMP.DATA_DIR*"/nrel_profiles.csv", _DF.DataFrame, ntasks = 1)
 # pf_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 100., "print_level"=>0 )
 
-function run_impedance_estimation_ug_noshunt_30_load_case(result_path::String, ie_solver, pf_solver, profiles::_DF.DataFrame, t_start::Int, t_end::Int; scenario_id::Int = 1, add_meas_noise::Bool=true, power_mult::Float64=1., use_length_bounds::Bool=true, length_bounds_percval::Float64=0.10)    
 
-    data, eng, z_pu = prepare_math_eng_data()
+function run_impedance_estimation_ug_noshunt_eulvtf(result_path::String, ie_solver, pf_solver, profiles::_DF.DataFrame, t_start::Int, t_end::Int; scenario_id::Int = 1, add_meas_noise::Bool=true, power_mult::Float64=1., use_length_bounds::Bool=true, length_bounds_percval::Float64=0.10)    
+
+    data, eng, z_pu = prepare_math_eng_data(feeder_name = "eulvtf")
 
     ###################################
     ### CHANGE LINECODES OF SERVICE CABLES TO 2-WIRE (EVERYHING IS 4-WIRE IN THE BEGINNING BY CONSTRUCTION)
     ###################################
 
     for (b, branch) in data["branch"]
-        if b ∈ ["32", "1", "2", "51", "27", "33", "28", "25", "49", "5", "43", "34", "44", "55", "37", "12", "20", "6", "7", "57", "4", "22"]
+        if b ∈ ["32", "2", "105", "109", "74", "41", "51", "27", "75", "42", "33", "28", "63", "93", "26", "10", "77", "59", "5", "89", "62", "43", "90", "39"]
             # two-wire bits of one linecode
-            r = eng["linecode"]["uglv_185al_xlpe/nyl/pvc_ug_2w_bundled"]["rs"]
-            x = eng["linecode"]["uglv_185al_xlpe/nyl/pvc_ug_2w_bundled"]["xs"]
-            eng["line"][branch["name"]]["linecode"] = "uglv_185al_xlpe/nyl/pvc_ug_2w_bundled"
+            r = eng["linecode"]["ugsc_16cu_xlpe/nyl/pvc_ug_2w_bundled"]["rs"]
+            x = eng["linecode"]["ugsc_16cu_xlpe/nyl/pvc_ug_2w_bundled"]["xs"]
+            eng["line"][branch["name"]]["linecode"] = "ugsc_16cu_xlpe/nyl/pvc_ug_2w_bundled"
         else
             if length(branch["f_connections"]) == 2 # two-wire bits of other linecode
-                r = eng["linecode"]["ugsc_16al_xlpe/pvc_ug_2w_bundled"]["rs"]
-                x = eng["linecode"]["ugsc_16al_xlpe/pvc_ug_2w_bundled"]["xs"]    
-                eng["line"][branch["name"]]["linecode"] = "ugsc_16al_xlpe/pvc_ug_2w_bundled"
+                r = eng["linecode"]["ugsc_25cu_xlpe/nyl/pvc_ug_2w_bundled"]["rs"]
+                x = eng["linecode"]["ugsc_25cu_xlpe/nyl/pvc_ug_2w_bundled"]["xs"]    
+                eng["line"][branch["name"]]["linecode"] = "ugsc_25cu_xlpe/nyl/pvc_ug_2w_bundled"
             else
-                r = eng["linecode"]["uglv_240al_xlpe/nyl/pvc_ug_4w_bundled"]["rs"]
-                x = eng["linecode"]["uglv_240al_xlpe/nyl/pvc_ug_4w_bundled"]["xs"]    
+                r = eng["linecode"]["uglv_120cu_xlpe/nyl/pvc_ug_4w_bundled"]["rs"]
+                x = eng["linecode"]["uglv_120cu_xlpe/nyl/pvc_ug_4w_bundled"]["xs"]    
                 # linecode name in `eng` for these ones is the default one        
             end
         end
@@ -57,23 +58,24 @@ function run_impedance_estimation_ug_noshunt_30_load_case(result_path::String, i
     ############### CREATE MULTINETWORK DATA WITH MEASUREMENT TIMESERIES ###############
     # it runs a powerflow for each time step first, so it takes some time...
 
+    # pf_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 100., "print_level"=>0 )
     mn_data, real_volts = _IMP.build_multinetwork_dsse_data(data, profiles, pf_solver, σ_v, σ_d, σ_g; t_start=t_start, t_end=t_end, add_noise=add_meas_noise, seed = scenario_id, power_mult = power_mult)
 
     material_resist_dict = Dict(
-        "uglv_185al_xlpe/nyl/pvc_ug_2w_bundled" => 45.66553107812399,
-        "ugsc_16al_xlpe/pvc_ug_2w_bundled" => 44.15319979061239,
-        "uglv_240al_xlpe/nyl/pvc_ug_4w_bundled" => 43.076513156374084
+        "ugsc_25cu_xlpe/nyl/pvc_ug_2w_bundled" => 26.210307508899646,
+        "ugsc_16cu_xlpe/nyl/pvc_ug_2w_bundled" => 26.600493316475497,
+        "uglv_120cu_xlpe/nyl/pvc_ug_4w_bundled" => 27.782140561270225
     )
 
     mn_data["nw"]["1"]["linecode_map"] = Dict{Int, Any}() 
     for (id, code) in enumerate(keys(eng["linecode"]))
-        if code ∈ ["uglv_185al_xlpe/nyl/pvc_ug_2w_bundled", "ugsc_16al_xlpe/pvc_ug_2w_bundled"]
+        if code ∈ ["ugsc_16cu_xlpe/nyl/pvc_ug_2w_bundled", "ugsc_25cu_xlpe/nyl/pvc_ug_2w_bundled"]
             mn_data["nw"]["1"]["linecode_map"][id] = Dict{String, Any}(
                 "name" => code,
                 "n_wires" => 2,
                 "r_material" => fill(material_resist_dict[code], 2)
             )
-        elseif code == "uglv_240al_xlpe/nyl/pvc_ug_4w_bundled"
+        elseif code == "uglv_120cu_xlpe/nyl/pvc_ug_4w_bundled"
             mn_data["nw"]["1"]["linecode_map"][id] = Dict{String, Any}(
                 "name" => code,
                 "n_wires" => 4,
@@ -96,7 +98,6 @@ function run_impedance_estimation_ug_noshunt_30_load_case(result_path::String, i
     mn_data["nw"]["1"]["rho"] = Dict()
     mn_data["nw"]["1"]["alpha"] = Dict()
 
-    # TODO: add informed bounds on geometries?
     # mn_data["nw"]["1"]["linecode_map"][7]["A_p_max"] = [20, 20]
     # mn_data["nw"]["1"]["linecode_map"][7]["A_p_min"] = [17, 17]
     # mn_data["nw"]["1"]["linecode_map"][7]["dij_2w_max"] = 10
@@ -118,13 +119,13 @@ function run_impedance_estimation_ug_noshunt_30_load_case(result_path::String, i
     end
 
     sol = _IMP.solve_imp_est_carson(mn_data, ie_solver)
-    sol = _IMP.build_rx_sol_dict(mn_data, sol) # completes solution information getting together things that are not reported by default
+    sol = _IMP.build_rx_sol_dict(mn_data, sol) # completes solution information getting together things that are not reported
     imp_est  = _IMP.get_cumulative_impedance_of_loads_from_sol(mn_data, sol, false)
     imp_true = _IMP.get_cumulative_impedance_of_loads_from_data(mn_data, true)
 
     est_volts = _IMP.build_estimated_volts_dataframe(sol, mn_data, scenario_id)
 
-    case = "case30loads_series_"
+    case = "eulvtf_series_"
 
     _IMP.drop_results(case, result_path, "", [], sol, mn_data, t_start, t_end, scenario_id, add_meas_noise, power_mult, false, false, false, use_length_bounds, length_bounds_percval, imp_est, imp_true, real_volts, est_volts)
 
