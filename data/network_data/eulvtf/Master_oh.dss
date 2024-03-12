@@ -16,8 +16,8 @@ Set DefaultBaseFreq=50
 New Circuit.ENWL_network_1_Feeder_1_4wire BasekV=0.416 pu=1.00 ISC3=100000 ISC1=100000
 New Reactor.Grounding phases=1 bus1=sourcebus.4 bus2=sourcebus.0 R=0.0 X=1E-10
 
-Redirect LineCode.txt
-Redirect Lines.txt
+Redirect ../../linecode_library/LineCode_impedances_adjusted.dss
+Redirect Lines_oh.txt
 Redirect Loads.txt
 
 New Energymeter.substation Element=Line.LINE1 1
