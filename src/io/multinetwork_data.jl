@@ -22,7 +22,7 @@ function build_multinetwork_dsse_data(data::Dict, df::_DF.DataFrame, pf_solver, 
         # ref_bus = [b for (b,bus) in data["bus"] if bus["bus_type"] ==3][1]
         # data["bus"][ref_bus]["vm"] = vcat([randn(_RAN.MersenneTwister(ts)), randn(_RAN.MersenneTwister(ts+1000)), randn(_RAN.MersenneTwister(ts+2000))]./800 .+1 , 0)
 
-        _build_dictionary_entries(data, mn_data, ts)
+        _build_dictionary_entries(data, mn_data, ts_id)
         insert_profiles!(data, df, ts, power_mult=power_mult) # inserts NREL load profiles for powerflow
 
         # Solves the opf, i.e., which gives noiseless input
@@ -37,13 +37,13 @@ function build_multinetwork_dsse_data(data::Dict, df::_DF.DataFrame, pf_solver, 
         push!(real_volts, vcat([pf_results["solution"]["bus"]["$(load["load_bus"])"]["vm"][1] for (l,load) in data["load"]], [seed, ts]))
 
         # adds the powerflow results (P, Q, |U|) of this timestep on the mn dict, for future reference/comparison
-        add_pf_result_to_mn_data!(mn_data["nw"]["$ts"], pf_results)
+        add_pf_result_to_mn_data!(mn_data["nw"]["$ts_id"], pf_results)
 
         # converts the powerflow results into (noisy or not) measurements
         add_measurements!(data, pf_results, σ_v, σ_d, σ_g, add_noise = add_noise, seed = seed, include_transfo_meas = false)
 
         # store this timestep in multinetwork dict
-        mn_data["nw"]["$ts"]["meas"] = deepcopy(data["meas"]);
+        mn_data["nw"]["$ts_id"]["meas"] = deepcopy(data["meas"]);
 
     end
     return mn_data, real_volts
