@@ -190,9 +190,7 @@ function get_cumulative_impedance_of_loads_from_sol(mn_data::Dict, sol::Dict, di
     return load_dist_dict
 end
 
-function drop_results(case, result_path, other_string, summary_df, sol, mn_data, t_start, t_end, seed, add_meas_noise, power_mult, A_p_bounds, dist_bounds, r_ac_error, use_length_bounds, length_bounds_percval, imp_est, imp_true, real_volts, est_volts; save_summary::Bool=true)
-    
-    unique_id = _RAN.randstring(5)
+function drop_results(case, result_path, other_string, summary_df, sol, mn_data, t_start, t_end, seed, add_meas_noise, power_mult, A_p_bounds, dist_bounds, r_ac_error, use_length_bounds, length_bounds_percval, imp_est, imp_true, real_volts, est_volts, unique_id; save_summary::Bool=true)
     
     # drop impedances as JSONs
     imp_est  = JSON.json(imp_est)
@@ -218,6 +216,23 @@ function drop_results(case, result_path, other_string, summary_df, sol, mn_data,
 
     open("$(result_path)_$(case)_length_dict_scenario_$(seed)_$(other_string)_$(unique_id).json","w") do f 
         write(f, length_dict) 
+    end
+
+end
+
+function drop_shunt_results(case, result_path, other_string, sol, mn_data, seed, unique_id)
+
+    shunt_dict = Dict{String, Any}()
+    for (s, shunt) in mn_data["nw"]["1"]["shunt"]
+        shunt_sol = sol["solution"]["nw"]["1"]["bus"]["$(shunt["shunt_bus"])"]
+        shunt_dict[s] = Dict("shunt_est" => Dict("gs" => shunt_sol["g_sh"], 
+                                                 "bs" => shunt_sol["b_sh"]),
+                            "shunt_true" => Dict("gs"=> shunt["gs"][end, end], 
+                                                 "bs"=> shunt["bs"][end, end]))
+    end
+    shunt_dict = JSON.json(shunt_dict)
+    open("$(result_path)_$(case)_shunts_scenario_$(seed)_$(other_string)_$(unique_id).json","w") do f 
+        write(f, shunt_dict) 
     end
 
 end
