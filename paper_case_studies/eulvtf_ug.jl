@@ -126,8 +126,7 @@ function run_impedance_estimation_ug_noshunt_eulvtf(result_path::String, ie_solv
     est_volts = _IMP.build_estimated_volts_dataframe(sol, mn_data, scenario_id)
 
     case = "eulvtf_series_"
-    unique_id = _RAN.randstring(5)
 
-    _IMP.drop_results(case, result_path, "", [], sol, mn_data, t_start, t_end, scenario_id, add_meas_noise, power_mult, false, false, false, use_length_bounds, length_bounds_percval, imp_est, imp_true, real_volts, est_volts, unique_id)
+    _IMP.drop_results(case, result_path, "", [], sol, mn_data, t_start, t_end, scenario_id, add_meas_noise, power_mult, false, false, false, use_length_bounds, length_bounds_percval, imp_est, imp_true, real_volts, est_volts)
 
 end

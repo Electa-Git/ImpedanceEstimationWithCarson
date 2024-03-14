@@ -1,6 +1,6 @@
 import Random as _RAN
 
-function prepare_math_eng_data(;feeder_name::String="30load-feeder", oh_or_ug::String="ug")
+function prepare_math_eng_data(profiles;feeder_name::String="30load-feeder", oh_or_ug::String="ug")
     eng = _PMD.parse_file(_IMP.NTW_DATA_DIR*"/"*feeder_name*"/Master_$(oh_or_ug).dss", data_model = _PMD.ENGINEERING, transformations=[_PMD.transform_loops!,_PMD.remove_all_bounds!])
     _IMP.rm_enwl_transformer!(eng)
     _IMP.reduce_enwl_lines_eng!(eng)
@@ -16,8 +16,8 @@ function prepare_math_eng_data(;feeder_name::String="30load-feeder", oh_or_ug::S
     
     for (_,bus) in data["bus"]
         if bus["bus_type"] != 3 && !startswith(bus["source_id"], "transformer") && bus["index"] ∉ load_buses 
-            bus["vm_pair_lb"] = [(1, 4, 0.9);(2, 4, 0.9);(3, 4, 0.9)]
-            bus["vm_pair_ub"] = [(1, 4, 1.1);(2, 4, 1.1);(3, 4, 1.1)]
+            bus["vm_pair_lb"] = [(1, 4, 0.8);(2, 4, 0.8);(3, 4, 0.8)]
+            bus["vm_pair_ub"] = [(1, 4, 1.2);(2, 4, 1.2);(3, 4, 1.2)]
             bus["grounded"] .=  0
             bus["imp_grounded"] = fill(false, length(bus["terminals"]))
         elseif bus["index"] ∈ load_buses 

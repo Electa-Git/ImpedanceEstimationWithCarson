@@ -10,13 +10,13 @@ include("utils.jl")
 # 1) solver settings
 # 2) bounds on the conductor distances?
 
-# ie_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 500., "max_iter" => 3000)
-# profiles = CSV.read(_IMP.DATA_DIR*"/nrel_profiles.csv", _DF.DataFrame, ntasks = 1)
-# pf_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 100., "print_level"=>0 )
+ie_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 3600., "max_iter" => 6000)
+profiles = CSV.read(_IMP.DATA_DIR*"/nrel_profiles.csv", _DF.DataFrame, ntasks = 1)
+pf_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 200., "print_level"=>0 )
 
-function run_impedance_estimation_ug_noshunt_30_load_case(result_path::String, ie_solver, pf_solver, profiles::_DF.DataFrame, t_start::Int, t_end::Int; scenario_id::Int = 1, add_meas_noise::Bool=true, power_mult::Float64=1., use_length_bounds::Bool=true, length_bounds_percval::Float64=0.10)    
+function run_impedance_estimation_ug_noshunt_30_load_case(result_path::String, ie_solver, pf_solver, profiles::_DF.DataFrame, t_start::Int, t_end::Int, scenario_id::Int = 1, add_meas_noise::Bool=true, power_mult::Float64=1., use_length_bounds::Bool=true, length_bounds_percval::Float64=0.10)    
 
-    data, eng, z_pu = prepare_math_eng_data()
+    data, eng, z_pu = prepare_math_eng_data(profiles)
 
     ###################################
     ### CHANGE LINECODES OF SERVICE CABLES TO 2-WIRE (EVERYHING IS 4-WIRE IN THE BEGINNING BY CONSTRUCTION)
@@ -99,13 +99,13 @@ function run_impedance_estimation_ug_noshunt_30_load_case(result_path::String, i
     # TODO: add informed bounds on geometries?
     # mn_data["nw"]["1"]["linecode_map"][7]["A_p_max"] = [20, 20]
     # mn_data["nw"]["1"]["linecode_map"][7]["A_p_min"] = [17, 17]
-    # mn_data["nw"]["1"]["linecode_map"][7]["dij_2w_max"] = 10
-    # mn_data["nw"]["1"]["linecode_map"][7]["dij_2w_min"] = 7
+    mn_data["nw"]["1"]["linecode_map"][7]["dij_2w_max"] = 40
+    mn_data["nw"]["1"]["linecode_map"][7]["dij_2w_min"] = 5
 
     # mn_data["nw"]["1"]["linecode_map"][9]["A_p_max"] = [220, 220]
     # mn_data["nw"]["1"]["linecode_map"][9]["A_p_min"] = [214, 214]
-    # mn_data["nw"]["1"]["linecode_map"][9]["dij_2w_max"] = 26
-    # mn_data["nw"]["1"]["linecode_map"][9]["dij_2w_min"] = 23
+    mn_data["nw"]["1"]["linecode_map"][9]["dij_2w_max"] = 40
+    mn_data["nw"]["1"]["linecode_map"][9]["dij_2w_min"] = 5
 
     # mn_data["nw"]["1"]["linecode_map"][11]["A_p_max"] = [270, 270, 270, 270]
     # mn_data["nw"]["1"]["linecode_map"][11]["A_p_min"] = [260, 260, 260, 260]
@@ -125,8 +125,7 @@ function run_impedance_estimation_ug_noshunt_30_load_case(result_path::String, i
     est_volts = _IMP.build_estimated_volts_dataframe(sol, mn_data, scenario_id)
 
     case = "case30loads_series_"
-    unique_id = _RAN.randstring(5)
 
-    _IMP.drop_results(case, result_path, "", [], sol, mn_data, t_start, t_end, scenario_id, add_meas_noise, power_mult, false, false, false, use_length_bounds, length_bounds_percval, imp_est, imp_true, real_volts, est_volts, unique_id)
+    _IMP.drop_results(case, result_path, "", [], sol, mn_data, t_start, t_end, scenario_id, add_meas_noise, power_mult, false, false, false, use_length_bounds, length_bounds_percval, imp_est, imp_true, real_volts, est_volts)
 
 end
