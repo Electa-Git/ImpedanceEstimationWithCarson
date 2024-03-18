@@ -39,11 +39,11 @@ New Wiredata.UGSC_25Cu_XLPE/NYL/PVC DIAM=6.0 RAC=0.927 NormAmps=400 Runits=km ra
 !!!          4-wire overhead lines           !!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-New LineSpacing.ABC4X95_OH_4w_spacing nconds=4 nphases=3 x=[0, -15.3, -15.3, 0]  h=[5815.3, 5815.3, 5800, 5800]  units=mm ! [A, B, C, N]
-New Wiredata.ABC4X95 DIAM=11.9 RAC=0.398 NormAmps=215 Runits=km radunits=mm    ! RAC*A = 44.26565309964764
+New LineSpacing.LV_OH_4wire_PLUTO nconds=4 nphases=3 x=[-450, 450, 1100, -1100]  h=[5800, 5800, 5800, 5800]  units=mm ! [A, B, C, N]
+New Wiredata.PLUTO DIAM=18.8 RAC=0.168 NormAmps=437 Runits=km radunits=mm ! RAC*A = 46.63530931436062
 
-New LineSpacing.TW4X16_OH_4w_spacing nconds=4 nphases=3 x=[0, -7.01, -7.01, 0]  h=[5807.01, 5807.01, 5800, 5800]  units=mm ! [A, B, C, N]
-New Wiredata.TW4X16 DIAM=4.41 RAC=2.372 NormAmps=437 Runits=km radunits=mm     ! RAC*A = 36.23111879516384
+New LineSpacing.LV_OH_4wire_HYDROGEN nconds=4 nphases=3 x=[-450, 450, 1100, -1100]  h=[5800, 5800, 5800, 5800]  units=mm ! [A, B, C, N]
+New Wiredata.HYDROGEN DIAM=13.5 RAC=0.168 NormAmps=437 Runits=km radunits=mm ! RAC*A = 24.047320966903072
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!          2-wire overhead lines           !!!
