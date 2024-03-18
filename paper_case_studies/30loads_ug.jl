@@ -14,7 +14,7 @@ ie_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 36
 profiles = CSV.read(_IMP.DATA_DIR*"/nrel_profiles.csv", _DF.DataFrame, ntasks = 1)
 pf_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 200., "print_level"=>0 )
 
-function run_impedance_estimation_ug_noshunt_30_load_case(result_path::String, ie_solver, pf_solver, profiles::_DF.DataFrame, t_start::Int, t_end::Int, scenario_id::Int = 1, add_meas_noise::Bool=true, power_mult::Float64=1., use_length_bounds::Bool=true, length_bounds_percval::Float64=0.10)    
+function run_impedance_estimation_ug_noshunt_30_load_case(result_path::String, ie_solver, pf_solver, profiles::_DF.DataFrame, t_start::Int, t_end::Int; scenario_id::Int = 1, add_meas_noise::Bool=true, power_mult::Float64=1., use_length_bounds::Bool=true, length_bounds_percval::Float64=0.10, exploit_equal_crossection::Bool=false, exploit_squaredness::Bool=false, exploit_horizontality::Bool=false)    
 
     data, eng, z_pu = prepare_math_eng_data(profiles)
 
@@ -90,25 +90,28 @@ function run_impedance_estimation_ug_noshunt_30_load_case(result_path::String, i
 
     # materials and other carsons inputs
     mn_data["nw"]["1"]["settings"]["z_pu"] = z_pu
+    mn_data["nw"]["1"]["settings"]["exploit_horizontality"] = exploit_horizontality
+    mn_data["nw"]["1"]["settings"]["exploit_equal_crossection"] = exploit_equal_crossection
+    mn_data["nw"]["1"]["settings"]["exploit_squaredness"] = exploit_squaredness
+    mn_data["nw"]["1"]["settings"]["oh_or_ug"] = "ug"
     mn_data["nw"]["1"]["settings"]["rescaler"] = 1.
     mn_data["nw"]["1"]["settings"]["mu_rel"] = 1.
     mn_data["nw"]["1"]["temperature"] = Dict()
     mn_data["nw"]["1"]["rho"] = Dict()
     mn_data["nw"]["1"]["alpha"] = Dict()
 
-    # TODO: add informed bounds on geometries?
     # mn_data["nw"]["1"]["linecode_map"][7]["A_p_max"] = [20, 20]
     # mn_data["nw"]["1"]["linecode_map"][7]["A_p_min"] = [17, 17]
-    mn_data["nw"]["1"]["linecode_map"][7]["dij_2w_max"] = 40
-    mn_data["nw"]["1"]["linecode_map"][7]["dij_2w_min"] = 5
+    # mn_data["nw"]["1"]["linecode_map"][8]["dij_2w_max"] = 40
+    # mn_data["nw"]["1"]["linecode_map"][8]["dij_2w_min"] = 5
 
-    # mn_data["nw"]["1"]["linecode_map"][9]["A_p_max"] = [220, 220]
-    # mn_data["nw"]["1"]["linecode_map"][9]["A_p_min"] = [214, 214]
-    mn_data["nw"]["1"]["linecode_map"][9]["dij_2w_max"] = 40
-    mn_data["nw"]["1"]["linecode_map"][9]["dij_2w_min"] = 5
+    # # mn_data["nw"]["1"]["linecode_map"][9]["A_p_max"] = [220, 220]
+    # # mn_data["nw"]["1"]["linecode_map"][9]["A_p_min"] = [214, 214]
+    # mn_data["nw"]["1"]["linecode_map"][9]["dij_2w_max"] = 40
+    # mn_data["nw"]["1"]["linecode_map"][9]["dij_2w_min"] = 5
 
-    # mn_data["nw"]["1"]["linecode_map"][11]["A_p_max"] = [270, 270, 270, 270]
-    # mn_data["nw"]["1"]["linecode_map"][11]["A_p_min"] = [260, 260, 260, 260]
+    # # mn_data["nw"]["1"]["linecode_map"][11]["A_p_max"] = [270, 270, 270, 270]
+    # # mn_data["nw"]["1"]["linecode_map"][11]["A_p_min"] = [260, 260, 260, 260]
 
     if use_length_bounds
         for (b, branch) in mn_data["nw"]["1"]["branch"]
@@ -126,6 +129,6 @@ function run_impedance_estimation_ug_noshunt_30_load_case(result_path::String, i
 
     case = "case30loads_series_"
 
-    _IMP.drop_results(case, result_path, "", [], sol, mn_data, t_start, t_end, scenario_id, add_meas_noise, power_mult, false, false, false, use_length_bounds, length_bounds_percval, imp_est, imp_true, real_volts, est_volts)
+    _IMP.drop_results(case, result_path, "", [], sol, mn_data, t_start, t_end, scenario_id, add_meas_noise, power_mult, false, false, false, use_length_bounds, length_bounds_percval, imp_est, imp_true, real_volts, est_volts, exploit_equal_crossection, exploit_squaredness, exploit_horizontality)
 
 end

@@ -134,6 +134,8 @@ function constraint_mc_current_balance(pm::_PMD.AbstractUnbalancedPowerModel, i:
 
     Gt, Bt = _PMD._build_bus_shunt_matrices(pm, nw, terminals, bus_shunts)
 
+    resistive_only = haskey(_PMD.ref(pm, 1, :settings), "shunt_resistive") && _PMD.ref(pm, 1, :settings)["shunt_resistive"]
+
     for (idx, t) in total_ungrounded_terminals
         if isempty(imperfectly_grounded_terminals)           
             # do nothing
@@ -144,7 +146,9 @@ function constraint_mc_current_balance(pm::_PMD.AbstractUnbalancedPowerModel, i:
             Gt .= 0.
             Bt .= 0.
             Gt[n,n] = _PMD.var(pm, 1, :g_sh, i) # this brutal overwriting allows you to leave the bs,gs, in the shunt entries in the dictionary ;)
-            Bt[n,n] = _PMD.var(pm, 1, :b_sh, i) # this brutal overwriting allows you to leave the bs,gs, in the shunt entries in the dictionary ;)
+            if !resistive_only
+                Bt[n,n] = _PMD.var(pm, 1, :b_sh, i) # this brutal overwriting allows you to leave the bs,gs, in the shunt entries in the dictionary ;)
+            end
         end
 
         JuMP.@constraint(pm.model,    sum(cr[a][t] for (a, conns) in bus_arcs if t in conns)
@@ -177,6 +181,9 @@ function carson_impedance_expressions(pm::_PMD.AbstractExplicitNeutralIVRModel)
     α = haskey(_PMD.ref(pm, 1, :alpha), "alpha_value") ? _PMD.ref(pm, 1, :alpha)["alpha_value"] : @info "alpha value not given"
     if haskey(_PMD.ref(pm, 1, :alpha), "alpha_value") @info "α is being fixed at value $(_PMD.ref(pm, 1, :alpha)["alpha_value"])" end
 
+    exploit_horizontality = haskey(_PMD.ref(pm, 1, :settings), "exploit_horizontality") && _PMD.ref(pm, 1, :settings)["exploit_horizontality"]
+    exploit_squaredness   = haskey(_PMD.ref(pm, 1, :settings), "exploit_squaredness")   && _PMD.ref(pm, 1, :settings)["exploit_squaredness"]
+
     # initialize expression containers
     _PMD.var(pm, 1)[:r_ac] = Dict{Int, Any}()
     _PMD.var(pm, 1)[:x] = Dict{Int, Any}()
@@ -202,6 +209,7 @@ function carson_impedance_expressions(pm::_PMD.AbstractExplicitNeutralIVRModel)
 
         # build X matrix
         x = zeros(JuMP.NonlinearExpr, (n_wires, n_wires))
+        distance_indices = [(1,2), (1,3), (2,3), (1,4), (2,4), (3,4)]
         for c in CartesianIndices(x)
             if c[1] == c[2]
                 x[c] = JuMP.@expression(pm.model, 
@@ -210,11 +218,36 @@ function carson_impedance_expressions(pm::_PMD.AbstractExplicitNeutralIVRModel)
             elseif c[1] > c[2]
                 # do nothing, symmetry exploited below
             else
-                distance_indices = [(1,2), (1,3), (2,3), (1,4), (2,4), (3,4)]
                 idx = findfirst(x->x == (c[1], c[2]), distance_indices)
-                x[c[1], c[2]] = x[c[2], c[1]] = JuMP.@expression(pm.model, 
-                                            0.062832 * (c₂ + log(1) - log( c₁*Dij[idx] )    ) 
-                                        )
+                if !exploit_horizontality && !exploit_squaredness
+                    x[c[1], c[2]] = x[c[2], c[1]] = JuMP.@expression(pm.model, 
+                                                0.062832 * (c₂ + log(1) - log( c₁*Dij[idx] )    ) 
+                                            )
+                elseif exploit_horizontality
+                    if idx ∈ [1, 3, 6] 
+                        dist_expr = Dij[Int(floor(idx/3))+1] # Int(floor(idx/3))+1 maps from distance indices 1,3,6 to the length three vector [(1,2), (2,3), (3,4)] which are the only distances in te horizantal case
+                    elseif idx == 2 
+                        dist_expr = Dij[1]+Dij[2]
+                    elseif idx == 4
+                        dist_expr = Dij[1]+Dij[2]+Dij[3]
+                    else
+                        dist_expr = Dij[2]+Dij[3]
+                    end                        
+                    x[c[1], c[2]] = x[c[2], c[1]] = JuMP.@expression(pm.model, 
+                                                0.062832 * (c₂ + log(1) - log( c₁*dist_expr )))
+                elseif exploit_squaredness
+                    if idx ∈ [1, 2] 
+                        dist_expr = Dij[1]
+                    elseif idx ∈ [5, 6] 
+                        dist_expr = Dij[4]
+                    elseif idx == 3
+                        dist_expr = Dij[3]
+                    elseif idx == 4
+                        dist_expr = Dij[2]
+                    end
+                    x[c[1], c[2]] = x[c[2], c[1]] = JuMP.@expression(pm.model, 
+                            0.062832 * (c₂ + log(1) - log( c₁*dist_expr )))
+                end
             end
         end
 

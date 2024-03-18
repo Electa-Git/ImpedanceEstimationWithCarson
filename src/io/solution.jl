@@ -33,6 +33,9 @@ function build_rx_sol_dict(mn_data::Dict, sol::Dict)
         end
     
         x = zeros(size(A_p)[1], size(A_p)[1])
+        exploit_horizontality = haskey(mn_data["nw"]["1"]["settings"], "exploit_horizontality") && mn_data["nw"]["1"]["settings"]["exploit_horizontality"]
+        exploit_squaredness   = haskey(mn_data["nw"]["1"]["settings"], "exploit_squaredness")   && mn_data["nw"]["1"]["settings"]["exploit_squaredness"]
+
         for c in CartesianIndices(x)
             if c[1] == c[2]
                 x[c] = 0.062832* ( c₂ + log(1) - log( c₁*gmr[c[1]] ) ) 
@@ -41,7 +44,31 @@ function build_rx_sol_dict(mn_data::Dict, sol::Dict)
             else
                 distance_indices = [(1,2), (1,3), (2,3), (1,4), (2,4), (3,4)]
                 idx = findfirst(x->x == (c[1], c[2]), distance_indices)
-                x[c[1], c[2]] = x[c[2], c[1]] = 0.062832* ( c₂ + log(1) - log( c₁*Dij[idx] ) ) 
+                if !exploit_horizontality && !exploit_squaredness
+                    x[c[1], c[2]] = x[c[2], c[1]] = 0.062832* ( c₂ + log(1) - log( c₁*Dij[idx] ) ) 
+                elseif exploit_horizontality
+                    if idx ∈ [1, 3, 6] 
+                        dist_expr = Dij[Int(floor(idx/3))+1] # Int(floor(idx/3))+1 maps from distance indices 1,3,6 to the length three vector [(1,2), (2,3), (3,4)] which are the only distances in te horizantal case
+                    elseif idx == 2 
+                        dist_expr = Dij[1]+Dij[2]
+                    elseif idx == 4
+                        dist_expr = Dij[1]+Dij[2]+Dij[3]
+                    else
+                        dist_expr = Dij[2]+Dij[3]
+                    end                        
+                    x[c[1], c[2]] = x[c[2], c[1]] = 0.062832 * (c₂ + log(1) - log( c₁*dist_expr ))
+                elseif exploit_squaredness
+                    if idx ∈ [1, 2] 
+                        dist_expr = Dij[1]
+                    elseif idx ∈ [5, 6] 
+                        dist_expr = Dij[4]
+                    elseif idx == 3
+                        dist_expr = Dij[3]
+                    elseif idx == 4
+                        dist_expr = Dij[2]
+                    end
+                    x[c[1], c[2]] = x[c[2], c[1]] = 0.062832 * (c₂ + log(1) - log( c₁*dist_expr ))
+                end
             end
         end
         lc["x"] = x
@@ -190,48 +217,54 @@ function get_cumulative_impedance_of_loads_from_sol(mn_data::Dict, sol::Dict, di
     return load_dist_dict
 end
 
-function drop_results(case, result_path, other_string, summary_df, sol, mn_data, t_start, t_end, seed, add_meas_noise, power_mult, A_p_bounds, dist_bounds, r_ac_error, use_length_bounds, length_bounds_percval, imp_est, imp_true, real_volts, est_volts, unique_id; save_summary::Bool=true)
+function drop_results(case, result_path, other_string, summary_df, sol, mn_data, t_start, t_end, seed, add_meas_noise, power_mult, A_p_bounds, dist_bounds, r_ac_error, use_length_bounds, length_bounds_percval, imp_est, imp_true, real_volts, est_volts, exploit_equal_crossection, exploit_squareness, exploit_horizontality; save_summary::Bool=true)
     
     # drop impedances as JSONs
     imp_est  = JSON.json(imp_est)
     imp_true = JSON.json(imp_true)
-    open("$(result_path)_$(case)_imp_est_scenario_$(seed)_$(other_string)_$(unique_id).json","w") do f 
+    open("$(result_path)_$(case)_imp_est_scenario_$(seed)_$(other_string)_ts_$(t_start)_te_$(t_end).json","w") do f 
         write(f, imp_est) 
     end
-    open("$(result_path)_$(case)_imp_true_scenario_$(seed)_$(other_string)_$(unique_id).json","w") do f 
+    open("$(result_path)_$(case)_imp_true_scenario_$(seed)_$(other_string)_ts_$(t_start)_te_$(t_end).json","w") do f 
         write(f, imp_true) 
     end
 
     # drop voltages as CSVs
-    real_volts |> CSV.write("$(result_path)_$(case)_real_volts_scenario_$(seed)_$(other_string)_$(unique_id).csv")
-    est_volts |> CSV.write("$(result_path)_$(case)_est_volts_scenario_$(seed)_$(other_string)_$(unique_id).csv")
+    real_volts |> CSV.write("$(result_path)_$(case)_real_volts_scenario_$(seed)_$(other_string)_ts_$(t_start)_te_$(t_end).csv")
+    est_volts |> CSV.write("$(result_path)_$(case)_est_volts_scenario_$(seed)_$(other_string)_ts_$(t_start)_te_$(t_end).csv")
 
     # drop general result summary
-    summary_df = build_summary_results_csv(case, result_path, other_string, unique_id, summary_df, sol, t_start::Int, t_end::Int,seed, add_meas_noise, power_mult, A_p_bounds, dist_bounds, r_ac_error, use_length_bounds, length_bounds_percval, save_summary)
-    if save_summary  summary_df |> CSV.write("$(result_path)_$(case)_general_summary_scenario_$(seed)_$(other_string)_$(unique_id).csv") end
+    summary_df = build_summary_results_csv(case, result_path, other_string, summary_df, sol, t_start::Int, t_end::Int,seed, add_meas_noise, power_mult, A_p_bounds, dist_bounds, r_ac_error, use_length_bounds, length_bounds_percval, save_summary, exploit_equal_crossection, exploit_squareness, exploit_horizontality)
+    if save_summary  summary_df |> CSV.write("$(result_path)_$(case)_general_summary_scenario_$(seed)_$(other_string)_ts_$(t_start)_te_$(t_end).csv") end
 
     # linecode estimation result
     df_linecode, length_dict = build_linecode_results(sol, mn_data, seed)
-    df_linecode |> CSV.write("$(result_path)_$(case)_linecode_results_scenario_$(seed)_$(other_string)_$(unique_id).csv")
+    df_linecode |> CSV.write("$(result_path)_$(case)_linecode_results_scenario_$(seed)_$(other_string)_ts_$(t_start)_te_$(t_end).csv")
 
-    open("$(result_path)_$(case)_length_dict_scenario_$(seed)_$(other_string)_$(unique_id).json","w") do f 
+    open("$(result_path)_$(case)_length_dict_scenario_$(seed)_$(other_string)_ts_$(t_start)_te_$(t_end).json","w") do f 
         write(f, length_dict) 
     end
 
 end
 
-function drop_shunt_results(case, result_path, other_string, sol, mn_data, seed, unique_id)
+function drop_shunt_results(case, result_path, other_string, sol, mn_data, seed, t_start, t_end, shunt_resistive)
 
     shunt_dict = Dict{String, Any}()
     for (s, shunt) in mn_data["nw"]["1"]["shunt"]
         shunt_sol = sol["solution"]["nw"]["1"]["bus"]["$(shunt["shunt_bus"])"]
-        shunt_dict[s] = Dict("shunt_est" => Dict("gs" => shunt_sol["g_sh"], 
-                                                 "bs" => shunt_sol["b_sh"]),
-                            "shunt_true" => Dict("gs"=> shunt["gs"][end, end], 
-                                                 "bs"=> shunt["bs"][end, end]))
+
+        if shunt_resistive 
+            shunt_dict[s] = Dict("shunt_est" =>  Dict("gs" => shunt_sol["g_sh"]), 
+                                 "shunt_true" => Dict("gs"=> shunt["gs"][end, end]))
+        else
+            shunt_dict[s] = Dict("shunt_est" => Dict("gs" => shunt_sol["g_sh"], 
+                                                    "bs" => shunt_sol["b_sh"]),
+                                "shunt_true" => Dict("gs"=> shunt["gs"][end, end], 
+                                                    "bs"=> shunt["bs"][end, end]))
+        end
     end
     shunt_dict = JSON.json(shunt_dict)
-    open("$(result_path)_$(case)_shunts_scenario_$(seed)_$(other_string)_$(unique_id).json","w") do f 
+    open("$(result_path)_$(case)_shunts_scenario_$(seed)_$(other_string)_ts_$(t_start)_te_$(t_end)_resistive_$(shunt_resistive).json","w") do f 
         write(f, shunt_dict) 
     end
 
@@ -262,14 +295,14 @@ function build_estimated_volts_dataframe(sol::Dict, mn_data::Dict, seed::Int)
     return est_volts
 end
 
-function build_summary_results_csv(case, result_path, other_string, unique_id, summary_df, sol, t_start::Int, t_end::Int,seed, add_meas_noise, power_mult, A_p_bounds, dist_bounds, r_ac_error, use_length_bounds, length_bounds_percval, save_as_csv)
+function build_summary_results_csv(case, result_path, other_string, summary_df, sol, t_start::Int, t_end::Int,seed, add_meas_noise, power_mult, A_p_bounds, dist_bounds, r_ac_error, use_length_bounds, length_bounds_percval, save_as_csv, exploit_equal_crossection, exploit_squareness, exploit_horizontality)
     if isempty(summary_df)
-        summary_df = _DF.DataFrame(fill([], 12), ["scenario_id", "length_bounds", "t_start", "t_end", "meas_noise", "power_mult", "A_p_bounds", "dist_bounds", "r_ac_error", "solve_time", "solve_status", "objective"])
+        summary_df = _DF.DataFrame(fill([], 15), ["scenario_id", "length_bounds", "t_start", "t_end", "meas_noise", "power_mult", "A_p_bounds", "dist_bounds", "r_ac_error", "exploit_equal_crossection", "exploit_squareness", "exploit_horizontality", "solve_time", "solve_status", "objective"])
     end
     lb = use_length_bounds ? length_bounds_percval : false
-    push!(summary_df, [seed, lb, t_start, t_end, add_meas_noise, power_mult, A_p_bounds, dist_bounds, r_ac_error, sol["solve_time"], sol["termination_status"], sol["objective"]])
+    push!(summary_df, [seed, lb, t_start, t_end, add_meas_noise, power_mult, A_p_bounds, dist_bounds, r_ac_error, exploit_equal_crossection, exploit_squareness, exploit_horizontality, sol["solve_time"], sol["termination_status"], sol["objective"]])
     if save_as_csv
-        summary_df |> CSV.write("$(result_path)_$(case)_general_summary_scenario_$(seed)_$(other_string)_$(unique_id).csv")
+        summary_df |> CSV.write("$(result_path)_$(case)_general_summary_scenario_$(seed)_$(other_string)_ts_$(t_start)_te_$(t_end).csv")
     end
     return summary_df
 end

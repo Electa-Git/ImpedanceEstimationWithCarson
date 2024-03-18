@@ -11,6 +11,9 @@ function build_multinetwork_dsse_data(data::Dict, df::_DF.DataFrame, pf_solver, 
 
     real_volts = _DF.DataFrame(fill([], length(data["load"])+2), vcat(["load_$(l)_ph_$(load["connections"][1])" for (l,load) in data["load"]], ["scenario_id", "time_step"]))
 
+    power_unit = data["settings"]["sbase"]
+    @info "The power unit in use is $power_unit and the load multiplication factor is $power_mult"
+
     for (ts_id, ts) in enumerate(t_start:t_end)
         
         # add info / initialize multinetwork dict
@@ -76,6 +79,9 @@ function build_multinetwork_dsse_data_with_shunts(data::Dict, df::_DF.DataFrame,
         end
     end
 
+    power_unit = data["settings"]["sbase"]
+    @info "The power unit in use is $power_unit and the load multiplication factor is $power_mult"
+
     for (ts_id, ts) in enumerate(t_start:t_end)
         
         # add info / initialize multinetwork dict
@@ -125,7 +131,6 @@ timestep by timestep, reads the PQ profiles and adds the demand at each user
 """
 function insert_profiles!(data, df, timestep; power_mult::Float64=1.)
     power_unit = data["settings"]["sbase"]
-    @info "The power unit in use is $power_unit and the load multiplication factor is $power_mult"
     for (_, load) in data["load"]
         p_id = load["parquet_id"]
         load["pd"] = [df[timestep, "P_kW_"*p_id]/power_unit]*power_mult

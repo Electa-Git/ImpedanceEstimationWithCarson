@@ -15,9 +15,9 @@ ie_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 50
 # pf_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 100., "print_level"=>0 )
 
 
-function run_impedance_estimation_ug_noshunt_eulvtf(result_path::String, ie_solver, pf_solver, profiles::_DF.DataFrame, t_start::Int, t_end::Int; scenario_id::Int = 1, add_meas_noise::Bool=true, power_mult::Float64=1., use_length_bounds::Bool=true, length_bounds_percval::Float64=0.10)    
+function run_impedance_estimation_ug_noshunt_eulvtf(result_path::String, ie_solver, pf_solver, profiles::_DF.DataFrame, t_start::Int, t_end::Int; scenario_id::Int = 1, add_meas_noise::Bool=true, power_mult::Float64=1., use_length_bounds::Bool=true, length_bounds_percval::Float64=0.10, exploit_equal_crossection::Bool=false, exploit_squaredness::Bool=false, exploit_horizontality::Bool=false)    
 
-    data, eng, z_pu = prepare_math_eng_data(feeder_name = "eulvtf")
+    data, eng, z_pu = prepare_math_eng_data(profiles, feeder_name = "eulvtf")
 
     ###################################
     ### CHANGE LINECODES OF SERVICE CABLES TO 2-WIRE (EVERYHING IS 4-WIRE IN THE BEGINNING BY CONSTRUCTION)
@@ -92,6 +92,10 @@ function run_impedance_estimation_ug_noshunt_eulvtf(result_path::String, ie_solv
 
     # materials and other carsons inputs
     mn_data["nw"]["1"]["settings"]["z_pu"] = z_pu
+    mn_data["nw"]["1"]["settings"]["exploit_horizontality"] = exploit_horizontality
+    mn_data["nw"]["1"]["settings"]["exploit_equal_crossection"] = exploit_equal_crossection
+    mn_data["nw"]["1"]["settings"]["exploit_squaredness"] = exploit_squaredness
+    mn_data["nw"]["1"]["settings"]["oh_or_ug"] = "ug"
     mn_data["nw"]["1"]["settings"]["rescaler"] = 1.
     mn_data["nw"]["1"]["settings"]["mu_rel"] = 1.
     mn_data["nw"]["1"]["temperature"] = Dict()
@@ -127,6 +131,6 @@ function run_impedance_estimation_ug_noshunt_eulvtf(result_path::String, ie_solv
 
     case = "eulvtf_series_"
 
-    _IMP.drop_results(case, result_path, "", [], sol, mn_data, t_start, t_end, scenario_id, add_meas_noise, power_mult, false, false, false, use_length_bounds, length_bounds_percval, imp_est, imp_true, real_volts, est_volts)
+    _IMP.drop_results(case, result_path, "", [], sol, mn_data, t_start, t_end, scenario_id, add_meas_noise, power_mult, false, false, false, use_length_bounds, length_bounds_percval, imp_est, imp_true, real_volts, est_volts, exploit_equal_crossection, exploit_squaredness, exploit_horizontality)
 
 end
