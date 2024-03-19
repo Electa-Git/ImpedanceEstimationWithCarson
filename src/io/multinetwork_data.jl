@@ -1,4 +1,4 @@
-function build_multinetwork_dsse_data(data::Dict, df::_DF.DataFrame, pf_solver, σ_v::Float64, σ_d::Float64, σ_g::Float64; t_start::Int=1, t_end::Int=20, add_noise::Bool=false, seed::Int64=2, power_mult::Float64=1.0)
+function build_multinetwork_dsse_data(data::Dict, df::_DF.DataFrame, pf_solver; timestep_set::Union{Vector{Int64}, UnitRange{Int64}} = 1:20, add_noise::Bool=false, seed::Int64=2, power_mult::Float64=1.0)
 
     mn_data = Dict{String, Any}()
     mn_data["multinetwork"] = true
@@ -14,16 +14,12 @@ function build_multinetwork_dsse_data(data::Dict, df::_DF.DataFrame, pf_solver, 
     power_unit = data["settings"]["sbase"]
     @info "The power unit in use is $power_unit and the load multiplication factor is $power_mult"
 
-    for (ts_id, ts) in enumerate(t_start:t_end)
+    for (ts_id, ts) in enumerate(timestep_set)
         
         # add info / initialize multinetwork dict
         mn_data["nw"]["$ts_id"] = Dict{String, Any}()
         mn_data["nw"]["$ts_id"]["original_timestep"] = ts
         mn_data["nw"]["$ts_id"]["per_unit"] = true
-
-        # assign unbalance voltage magnitude at ref_bus # TODO do we want sth like this??
-        # ref_bus = [b for (b,bus) in data["bus"] if bus["bus_type"] ==3][1]
-        # data["bus"][ref_bus]["vm"] = vcat([randn(_RAN.MersenneTwister(ts)), randn(_RAN.MersenneTwister(ts+1000)), randn(_RAN.MersenneTwister(ts+2000))]./800 .+1 , 0)
 
         _build_dictionary_entries(data, mn_data, ts_id)
         insert_profiles!(data, df, ts, power_mult=power_mult) # inserts NREL load profiles for powerflow
@@ -43,7 +39,7 @@ function build_multinetwork_dsse_data(data::Dict, df::_DF.DataFrame, pf_solver, 
         add_pf_result_to_mn_data!(mn_data["nw"]["$ts_id"], pf_results)
 
         # converts the powerflow results into (noisy or not) measurements
-        add_measurements!(data, pf_results, σ_v, σ_d, σ_g, add_noise = add_noise, seed = seed, include_transfo_meas = false)
+        add_measurements!(data, pf_results, add_noise = add_noise, seed = seed, include_transfo_meas = false)
 
         # store this timestep in multinetwork dict
         mn_data["nw"]["$ts_id"]["meas"] = deepcopy(data["meas"]);
@@ -52,7 +48,7 @@ function build_multinetwork_dsse_data(data::Dict, df::_DF.DataFrame, pf_solver, 
     return mn_data, real_volts
 end
 
-function build_multinetwork_dsse_data_with_shunts(data::Dict, df::_DF.DataFrame, pf_solver, σ_v::Float64, σ_d::Float64, σ_g::Float64; t_start::Int=1, t_end::Int=20, add_noise::Bool=false, loads_with_shunts::Vector{String} = ["1"], gs::Vector{Float64} = [50.], bs::Vector{Float64} = [15.], seed::Int64=2, power_mult::Float64=1.0)
+function build_multinetwork_dsse_data_with_shunts(data::Dict, df::_DF.DataFrame, pf_solver; timestep_set::Union{Vector{Int64}, UnitRange{Int64}} = 1:20, add_noise::Bool=false, loads_with_shunts::Vector{String} = ["1"], gs::Vector{Float64} = [50.], bs::Vector{Float64} = [15.], seed::Int64=2, power_mult::Float64=1.0)
 
     mn_data = Dict{String, Any}()
     mn_data["multinetwork"] = true
@@ -82,16 +78,12 @@ function build_multinetwork_dsse_data_with_shunts(data::Dict, df::_DF.DataFrame,
     power_unit = data["settings"]["sbase"]
     @info "The power unit in use is $power_unit and the load multiplication factor is $power_mult"
 
-    for (ts_id, ts) in enumerate(t_start:t_end)
+    for (ts_id, ts) in enumerate(timestep_set)
         
         # add info / initialize multinetwork dict
         mn_data["nw"]["$ts_id"] = Dict{String, Any}()
         mn_data["nw"]["$ts_id"]["original_timestep"] = ts
         mn_data["nw"]["$ts_id"]["per_unit"] = true
-
-        # assign unbalance voltage magnitude at ref_bus # TODO do we want sth like this??
-        # ref_bus = [b for (b,bus) in data["bus"] if bus["bus_type"] ==3][1]
-        # data["bus"][ref_bus]["vm"] = vcat([randn(_RAN.MersenneTwister(ts)), randn(_RAN.MersenneTwister(ts+1000)), randn(_RAN.MersenneTwister(ts+2000))]./800 .+1 , 0)
 
         _build_dictionary_entries(data, mn_data, ts_id)
         insert_profiles!(data, df, ts, power_mult=power_mult) # inserts NREL load profiles for powerflow
@@ -111,7 +103,7 @@ function build_multinetwork_dsse_data_with_shunts(data::Dict, df::_DF.DataFrame,
         add_pf_result_to_mn_data!(mn_data["nw"]["$ts_id"], pf_results)
 
         # converts the powerflow results into (noisy or not) measurements
-        add_measurements!(data, pf_results, σ_v, σ_d, σ_g, add_noise = add_noise, seed = seed, include_transfo_meas = true)
+        add_measurements!(data, pf_results, add_noise = add_noise, seed = seed, include_transfo_meas = true)
 
         # store this timestep in multinetwork dict
         mn_data["nw"]["$ts_id"]["meas"] = deepcopy(data["meas"])
@@ -156,24 +148,36 @@ function add_pf_result_to_mn_data!(mn_data::Dict, pf_results::Dict)
     mn_data["gen"]["1"]["pf_qg"] = deepcopy(pf_results["solution"]["gen"]["1"]["qg"])
 end
 
-function add_measurements!(data::Dict, pf_results::Dict, σ_v::Float64, σ_d::Float64, σ_g::Float64; add_noise::Bool = true, seed::Int = 1, include_transfo_meas::Bool = false)
+function add_measurements!(data::Dict, pf_results::Dict; add_noise::Bool = true, seed::Int = 1, include_transfo_meas::Bool = false)
     
     data["meas"] = Dict{String, Any}()
     m_id = 1
+    # original_sourcebus_id = collect(keys(data["settings"]["vbases_default"]))[1]
+
+    max_volt_error = 0.005 # in percentual
+    max_p_error = 0.01 # in percentual 
+    max_q_error = 2*max_p_error # in percentual
     
     for (l, load) in pf_results["solution"]["load"]
 
         load_bus = data["load"][l]["load_bus"]
-        randRNG = [_RAN.seed!(seed+load_bus+100*i) for i in 1:3] # not sure this really makes sense...
+        randRNG = [_RAN.seed!(seed+load_bus+100*i) for i in 1:3] # not sure this seeding really makes sense...
 
-        vm_dst = [_DST.Normal{Float64}(res, σ_v) for res in pf_results["solution"]["bus"]["$load_bus"]["vm"]]
-        pd_dst = [_DST.Normal{Float64}(res, σ_d) for res in load["pd"]]
-        qd_dst = [_DST.Normal{Float64}(res, σ_d) for res in load["qd"]]
+        σ_v_mult = 1/3*max_volt_error #/(data["settings"]["vbases_default"][original_sourcebus_id]*data["settings"]["voltage_scale_factor"])
+        σ_p_mult = 1/3*max_p_error    #/(data["settings"]["sbase_default"])
+        σ_q_mult = 1/3*max_q_error    #/(data["settings"]["sbase_default"])
+
+        vm_dst = [_DST.Normal{Float64}(res, σ_v_mult*res) for res in pf_results["solution"]["bus"]["$load_bus"]["vm"]]
+        pd_dst = [_DST.Normal{Float64}(res, σ_p_mult*res) for res in load["pd"]]
+        qd_dst = [_DST.Normal{Float64}(res, σ_q_mult*res) for res in load["qd"]]
 
         if add_noise 
-            vm_dst = [_DST.Normal{Float64}(_RAN.rand(randRNG[i], d), σ_v) for (i,d) in enumerate(vm_dst)] 
-            pd_dst = [_DST.Normal{Float64}(_RAN.rand(randRNG[i], d), σ_d) for (i,d) in enumerate(pd_dst)] 
-            qd_dst = [_DST.Normal{Float64}(_RAN.rand(randRNG[i], d), σ_d) for (i,d) in enumerate(qd_dst)] 
+            vm_meas = [_RAN.rand(randRNG[i], d) for (i,d) in enumerate(vm_dst)]
+            pd_meas = [_RAN.rand(randRNG[i], d) for (i,d) in enumerate(pd_dst)]
+            qd_meas = [_RAN.rand(randRNG[i], d) for (i,d) in enumerate(qd_dst)]
+            vm_dst = [_DST.Normal{Float64}(m, σ_v_mult*m) for m in vm_meas] 
+            pd_dst = [_DST.Normal{Float64}(m, maximum([σ_p_mult*m, 5e-4])) for m in pd_meas] 
+            qd_dst = [_DST.Normal{Float64}(m, maximum([σ_q_mult*m, 5e-4])) for m in qd_meas] 
         end
 
         # add voltage magnitude measurement
@@ -205,46 +209,7 @@ function add_measurements!(data::Dict, pf_results::Dict, σ_v::Float64, σ_d::Fl
     end
 
     if include_transfo_meas
-
-        m_id = maximum(parse.(Int, keys(data["meas"])))+1
-
-        gen_bus = data["gen"]["1"]["gen_bus"]
-        randRNG = [_RAN.seed!(seed+100*i) for i in 1:3] # not sure this really makes sense...
-
-        vm_dst = [_DST.Normal{Float64}(res, σ_v) for res in pf_results["solution"]["bus"]["$gen_bus"]["vm"]]
-        pg_dst = [_DST.Normal{Float64}(res, σ_g) for res in pf_results["solution"]["gen"]["1"]["pg"]]
-        qg_dst = [_DST.Normal{Float64}(res, σ_g) for res in pf_results["solution"]["gen"]["1"]["qg"]]
-
-        if add_noise 
-            vm_dst = [_DST.Normal{Float64}(_RAN.rand(randRNG[i], d), σ_v) for (i,d) in enumerate(vm_dst)] 
-            pg_dst = [_DST.Normal{Float64}(_RAN.rand(randRNG[i], d), σ_g) for (i,d) in enumerate(pg_dst)] 
-            qg_dst = [_DST.Normal{Float64}(_RAN.rand(randRNG[i], d), σ_g) for (i,d) in enumerate(qg_dst)] 
-        end
-
-        # add voltage magnitude measurement
-        data["meas"]["$m_id"] = Dict{String, Any}(
-            "var"    => :vm,
-            "cmp"    => :bus,
-            "cmp_id" => gen_bus,
-            "dst"    => vm_dst
-        ) 
-
-        # add active power measurement
-        data["meas"]["$(m_id+1)"] = Dict{String, Any}(
-            "var"    => :pg,
-            "cmp"    => :gen,
-            "cmp_id" => 1,
-            "dst"    => pg_dst
-        ) 
-
-        # add reactive power measurement
-        data["meas"]["$(m_id+2)"] = Dict{String, Any}(
-            "var"    => :qg,
-            "cmp"    => :gen,
-            "cmp_id" => 1,
-            "dst"    => qg_dst
-        ) 
-
+        nothing
+        # NB: there used to be code but is deprecated. check older version to retrieve it if needed
     end
-
 end
