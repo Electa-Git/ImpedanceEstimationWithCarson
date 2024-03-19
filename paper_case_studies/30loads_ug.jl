@@ -6,87 +6,28 @@ import Ipopt
 
 include("utils.jl")
 
-##### other things to customize (conf file???)
-# 1) solver settings
-# 2) bounds on the conductor distances?
-
-ie_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 3600., "max_iter" => 6000)
+ie_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 500., "max_iter" => 6000)
 profiles = CSV.read(_IMP.DATA_DIR*"/nrel_profiles.csv", _DF.DataFrame, ntasks = 1)
 pf_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 200., "print_level"=>0 )
 
-function run_impedance_estimation_ug_noshunt_30_load_case(result_path::String, ie_solver, pf_solver, profiles::_DF.DataFrame, t_start::Int, t_end::Int; scenario_id::Int = 1, add_meas_noise::Bool=true, power_mult::Float64=1., use_length_bounds::Bool=true, length_bounds_percval::Float64=0.10, exploit_equal_crossection::Bool=false, exploit_squaredness::Bool=false, exploit_horizontality::Bool=false)    
+timestep_set = find_most_loaded_timesteps(profiles, 300)
+
+run_impedance_estimation_ug_noshunt_30_load_case(raw"C:\Users\mvanin\OneDrive - KU Leuven\Desktop\repos\DataDrivenImpedanceEstimationWithCarson\paper_results\30l_ug_most_restricted/", ie_solver, pf_solver, profiles, timestep_set, add_meas_noise = true, length_bounds_percval=0.3, power_mult=3., exploit_squaredness = true, exploit_equal_crossection = true)
+run_impedance_estimation_ug_noshunt_30_load_case(raw"C:\Users\mvanin\OneDrive - KU Leuven\Desktop\repos\DataDrivenImpedanceEstimationWithCarson\paper_results\30l_ug_cross_only/", ie_solver, pf_solver, profiles, timestep_set, add_meas_noise = true, length_bounds_percval=0.3, power_mult=1., exploit_equal_crossection = true)
+run_impedance_estimation_ug_noshunt_30_load_case(raw"C:\Users\mvanin\OneDrive - KU Leuven\Desktop\repos\DataDrivenImpedanceEstimationWithCarson\paper_results\30l_ug_squared_only/", ie_solver, pf_solver, profiles, timestep_set, add_meas_noise = true, length_bounds_percval=0.3, power_mult=1., exploit_squaredness = true)
+run_impedance_estimation_ug_noshunt_30_load_case(raw"C:\Users\mvanin\OneDrive - KU Leuven\Desktop\repos\DataDrivenImpedanceEstimationWithCarson\paper_results\30l_ug_no_restriction/", ie_solver, pf_solver, profiles, timestep_set, add_meas_noise = true, length_bounds_percval=0.3, power_mult=1.)
+
+function run_impedance_estimation_ug_noshunt_30_load_case(result_path::String, ie_solver, pf_solver, profiles::_DF.DataFrame, timestep_set; scenario_id::Int = 1, add_meas_noise::Bool=true, power_mult::Float64=1., use_length_bounds::Bool=true, length_bounds_percval::Float64=0.10, exploit_equal_crossection::Bool=false, exploit_squaredness::Bool=false, exploit_horizontality::Bool=false)    
 
     data, eng, z_pu = prepare_math_eng_data(profiles)
 
-    ###################################
-    ### CHANGE LINECODES OF SERVICE CABLES TO 2-WIRE (EVERYHING IS 4-WIRE IN THE BEGINNING BY CONSTRUCTION)
-    ###################################
+    data, eng = build_linecode_for_ug_noshunt_30l!(data, eng, z_pu)
 
-    for (b, branch) in data["branch"]
-        if b ∈ ["32", "1", "2", "51", "27", "33", "28", "25", "49", "5", "43", "34", "44", "55", "37", "12", "20", "6", "7", "57", "4", "22"]
-            # two-wire bits of one linecode
-            r = eng["linecode"]["uglv_185al_xlpe/nyl/pvc_ug_2w_bundled"]["rs"]
-            x = eng["linecode"]["uglv_185al_xlpe/nyl/pvc_ug_2w_bundled"]["xs"]
-            eng["line"][branch["name"]]["linecode"] = "uglv_185al_xlpe/nyl/pvc_ug_2w_bundled"
-        else
-            if length(branch["f_connections"]) == 2 # two-wire bits of other linecode
-                r = eng["linecode"]["ugsc_16al_xlpe/pvc_ug_2w_bundled"]["rs"]
-                x = eng["linecode"]["ugsc_16al_xlpe/pvc_ug_2w_bundled"]["xs"]    
-                eng["line"][branch["name"]]["linecode"] = "ugsc_16al_xlpe/pvc_ug_2w_bundled"
-            else
-                r = eng["linecode"]["uglv_240al_xlpe/nyl/pvc_ug_4w_bundled"]["rs"]
-                x = eng["linecode"]["uglv_240al_xlpe/nyl/pvc_ug_4w_bundled"]["xs"]    
-                # linecode name in `eng` for these ones is the default one        
-            end
-        end
-        l = eng["line"][branch["name"]]["length"]
-        branch["br_r"] = r.*l./z_pu
-        branch["br_x"] = x.*l./z_pu
-    end
+    mn_data, real_volts = _IMP.build_multinetwork_dsse_data(data, profiles, pf_solver; timestep_set = timestep_set, add_noise=add_meas_noise, seed = scenario_id, power_mult = power_mult)
 
-    ######## SET MEASUREMENT SPECS
-        
-    max_volt_error = 2.3 # in Volts\
-    max_power_error = 0.1 # kW
-    original_sourcebus_id = collect(keys(data["settings"]["vbases_default"]))[1]
-
-    σ_v = 1/3*max_volt_error/(data["settings"]["vbases_default"][original_sourcebus_id]*data["settings"]["voltage_scale_factor"])
-    σ_d = 1/3*max_power_error/(data["settings"]["sbase_default"])
-    σ_g = 1/3*max_power_error/(data["settings"]["sbase_default"])
-
-    ############### CREATE MULTINETWORK DATA WITH MEASUREMENT TIMESERIES ###############
-    # it runs a powerflow for each time step first, so it takes some time...
-
-    mn_data, real_volts = _IMP.build_multinetwork_dsse_data(data, profiles, pf_solver, σ_v, σ_d, σ_g; t_start=t_start, t_end=t_end, add_noise=add_meas_noise, seed = scenario_id, power_mult = power_mult)
-
-    material_resist_dict = Dict(
-        "uglv_185al_xlpe/nyl/pvc_ug_2w_bundled" => 45.66553107812399,
-        "ugsc_16al_xlpe/pvc_ug_2w_bundled" => 44.15319979061239,
-        "uglv_240al_xlpe/nyl/pvc_ug_4w_bundled" => 43.076513156374084
-    )
-
-    mn_data["nw"]["1"]["linecode_map"] = Dict{Int, Any}() 
-    for (id, code) in enumerate(keys(eng["linecode"]))
-        if code ∈ ["uglv_185al_xlpe/nyl/pvc_ug_2w_bundled", "ugsc_16al_xlpe/pvc_ug_2w_bundled"]
-            mn_data["nw"]["1"]["linecode_map"][id] = Dict{String, Any}(
-                "name" => code,
-                "n_wires" => 2,
-                "r_material" => fill(material_resist_dict[code], 2)
-            )
-        elseif code == "uglv_240al_xlpe/nyl/pvc_ug_4w_bundled"
-            mn_data["nw"]["1"]["linecode_map"][id] = Dict{String, Any}(
-                "name" => code,
-                "n_wires" => 4,
-                "r_material" => fill(material_resist_dict[code], 4)
-            )
-        end
-    end
+    add_material_properties_for_ug_noshunt_30l!(mn_data, eng)
 
     make_all_branches_untrustworthy!(mn_data, eng)
-
-    for (b,bus) in mn_data["nw"]["1"]["bus"]
-        bus["imp_grounded"] = fill(false, length(bus["terminals"]))
-    end  
 
     # materials and other carsons inputs
     mn_data["nw"]["1"]["settings"]["z_pu"] = z_pu
@@ -94,31 +35,13 @@ function run_impedance_estimation_ug_noshunt_30_load_case(result_path::String, i
     mn_data["nw"]["1"]["settings"]["exploit_equal_crossection"] = exploit_equal_crossection
     mn_data["nw"]["1"]["settings"]["exploit_squaredness"] = exploit_squaredness
     mn_data["nw"]["1"]["settings"]["oh_or_ug"] = "ug"
-    mn_data["nw"]["1"]["settings"]["rescaler"] = 1.
+    mn_data["nw"]["1"]["settings"]["rescaler"] = 100.
     mn_data["nw"]["1"]["settings"]["mu_rel"] = 1.
     mn_data["nw"]["1"]["temperature"] = Dict()
     mn_data["nw"]["1"]["rho"] = Dict()
     mn_data["nw"]["1"]["alpha"] = Dict()
 
-    # mn_data["nw"]["1"]["linecode_map"][7]["A_p_max"] = [20, 20]
-    # mn_data["nw"]["1"]["linecode_map"][7]["A_p_min"] = [17, 17]
-    # mn_data["nw"]["1"]["linecode_map"][8]["dij_2w_max"] = 40
-    # mn_data["nw"]["1"]["linecode_map"][8]["dij_2w_min"] = 5
-
-    # # mn_data["nw"]["1"]["linecode_map"][9]["A_p_max"] = [220, 220]
-    # # mn_data["nw"]["1"]["linecode_map"][9]["A_p_min"] = [214, 214]
-    # mn_data["nw"]["1"]["linecode_map"][9]["dij_2w_max"] = 40
-    # mn_data["nw"]["1"]["linecode_map"][9]["dij_2w_min"] = 5
-
-    # # mn_data["nw"]["1"]["linecode_map"][11]["A_p_max"] = [270, 270, 270, 270]
-    # # mn_data["nw"]["1"]["linecode_map"][11]["A_p_min"] = [260, 260, 260, 260]
-
-    if use_length_bounds
-        for (b, branch) in mn_data["nw"]["1"]["branch"]
-            branch["l_min"] = branch["orig_length"]*(1-length_bounds_percval)/1000 # / 1000 because length data is in m but length var is in km
-            branch["l_max"] = branch["orig_length"]*(1+length_bounds_percval)/1000 # / 1000 because length data is in m but length var is in km
-        end
-    end
+    if use_length_bounds add_length_bounds!(mn_data, length_bounds_percval) end
 
     sol = _IMP.solve_imp_est_carson(mn_data, ie_solver)
     sol = _IMP.build_rx_sol_dict(mn_data, sol) # completes solution information getting together things that are not reported by default
@@ -129,6 +52,6 @@ function run_impedance_estimation_ug_noshunt_30_load_case(result_path::String, i
 
     case = "case30loads_series_"
 
-    _IMP.drop_results(case, result_path, "", [], sol, mn_data, t_start, t_end, scenario_id, add_meas_noise, power_mult, false, false, false, use_length_bounds, length_bounds_percval, imp_est, imp_true, real_volts, est_volts, exploit_equal_crossection, exploit_squaredness, exploit_horizontality)
+    _IMP.drop_results(case, result_path, "", [], sol, mn_data, timestep_set, scenario_id, add_meas_noise, power_mult, false, false, false, use_length_bounds, length_bounds_percval, imp_est, imp_true, real_volts, est_volts, exploit_equal_crossection, exploit_squaredness, exploit_horizontality)
 
 end

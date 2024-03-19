@@ -116,25 +116,7 @@ function run_impedance_estimation_oh_ground_eulvtf(result_path::String, ie_solve
     mn_data["nw"]["1"]["rho"] = Dict()
     mn_data["nw"]["1"]["alpha"] = Dict()
 
-    # mn_data["nw"]["1"]["linecode_map"][7]["A_p_max"] = [20, 20]
-    # mn_data["nw"]["1"]["linecode_map"][7]["A_p_min"] = [17, 17]
-    # mn_data["nw"]["1"]["linecode_map"][7]["dij_2w_max"] = 10
-    # mn_data["nw"]["1"]["linecode_map"][7]["dij_2w_min"] = 7
-
-    # mn_data["nw"]["1"]["linecode_map"][9]["A_p_max"] = [220, 220]
-    # mn_data["nw"]["1"]["linecode_map"][9]["A_p_min"] = [214, 214]
-    # mn_data["nw"]["1"]["linecode_map"][9]["dij_2w_max"] = 26
-    # mn_data["nw"]["1"]["linecode_map"][9]["dij_2w_min"] = 23
-
-    # mn_data["nw"]["1"]["linecode_map"][11]["A_p_max"] = [270, 270, 270, 270]
-    # mn_data["nw"]["1"]["linecode_map"][11]["A_p_min"] = [260, 260, 260, 260]
-
-    if use_length_bounds
-        for (b, branch) in mn_data["nw"]["1"]["branch"]
-            branch["l_min"] = branch["orig_length"]*(1-length_bounds_percval)/1000 # / 1000 because length data is in m but length var is in km
-            branch["l_max"] = branch["orig_length"]*(1+length_bounds_percval)/1000 # / 1000 because length data is in m but length var is in km
-        end
-    end
+    if use_length_bounds add_length_bounds!(mn_data, length_bounds_percval) end
 
     sol = _IMP.solve_imp_est_carson(mn_data, ie_solver)
     sol = _IMP.build_rx_sol_dict(mn_data, sol) # completes solution information getting together things that are not reported

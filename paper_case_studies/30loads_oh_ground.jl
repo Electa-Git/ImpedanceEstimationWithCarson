@@ -17,66 +17,35 @@ pf_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 10
 
 result_path = raw"C:\Users\mvanin\OneDrive - KU Leuven\Desktop\repos\DataDrivenImpedanceEstimationWithCarson\paper_results\30l_oh_shunt_most_restricted/"
 
-for scenario_id in 1:3
-    for (t_start, t_end) in zip([50, 111, 161], [110, 160, 220])
-     run_impedance_estimation_ug_noshunt_30_load_case(result_path, ie_solver, pf_solver, profiles, t_start, t_end, add_meas_noise = true, scenario_id =
+for (t_start, t_end) in zip([50, 111, 161], [110, 160, 220])
+        run_impedance_estimation_oh_ground_30_load_case(result_path, ie_solver, pf_solver, profiles, t_start, t_end, add_meas_noise = true, scenario_id =
 scenario_id, length_bounds_percval=0.3, power_mult=1., exploit_horizontality = true, exploit_equal_crossection = true)
 end
-end
 
-for scenario_id in 1:3
-    for (t_start, t_end) in zip([50, 111, 161], [110, 160, 220])
-     run_impedance_estimation_ug_noshunt_30_load_case(raw"C:\Users\mvanin\OneDrive - KU Leuven\Desktop\repos\DataDrivenImpedanceEstimationWithCarson\paper_results\30l_oh_shunt_cross_only/", ie_solver, pf_solver, profiles, t_start, t_end, add_meas_noise = true, scenario_id =
+for (t_start, t_end) in zip([50, 111, 161], [110, 160, 220])
+        run_impedance_estimation_oh_ground_30_load_case(raw"C:\Users\mvanin\OneDrive - KU Leuven\Desktop\repos\DataDrivenImpedanceEstimationWithCarson\paper_results\30l_oh_shunt_cross_only/", ie_solver, pf_solver, profiles, t_start, t_end, add_meas_noise = true, scenario_id =
 scenario_id, length_bounds_percval=0.3, power_mult=1., exploit_equal_crossection = true)
 end
-end
 
-for scenario_id in 1:3
-    for (t_start, t_end) in zip([50, 111, 161], [110, 160, 220])
-     run_impedance_estimation_ug_noshunt_30_load_case(raw"C:\Users\mvanin\OneDrive - KU Leuven\Desktop\repos\DataDrivenImpedanceEstimationWithCarson\paper_results\30l_oh_shunt_cross_only/", ie_solver, pf_solver, profiles, t_start, t_end, add_meas_noise = true, scenario_id =
+for (t_start, t_end) in zip([50, 111, 161], [110, 160, 220])
+        run_impedance_estimation_oh_ground_30_load_case(raw"C:\Users\mvanin\OneDrive - KU Leuven\Desktop\repos\DataDrivenImpedanceEstimationWithCarson\paper_results\30l_oh_shunt_horiz_only/", ie_solver, pf_solver, profiles, t_start, t_end, add_meas_noise = true, scenario_id =
 scenario_id, length_bounds_percval=0.3, power_mult=1., exploit_horizontality = true)
 end
-end
 
+for (t_start, t_end) in zip([50, 111, 161], [110, 160, 220])
+    run_impedance_estimation_oh_ground_30_load_case(raw"C:\Users\mvanin\OneDrive - KU Leuven\Desktop\repos\DataDrivenImpedanceEstimationWithCarson\paper_results\30l_oh_shunt_no_restriction/", ie_solver, pf_solver, profiles, t_start, t_end, add_meas_noise = true, scenario_id =
+scenario_id, length_bounds_percval=0.3, power_mult=1.)
+end
 
 function run_impedance_estimation_oh_ground_30_load_case(result_path::String, ie_solver, pf_solver, profiles::_DF.DataFrame, t_start::Int, t_end::Int; scenario_id::Int = 1, add_meas_noise::Bool=true, power_mult::Float64=1., use_length_bounds::Bool=true, length_bounds_percval::Float64=0.10, shunt_resistive::Bool=true, exploit_equal_crossection::Bool=false, exploit_horizontality::Bool=false)    
 
     data, eng, z_pu = prepare_math_eng_data(profiles ;feeder_name = "30load-feeder", oh_or_ug = "oh")
 
-    ###################################
-    ### CHANGE LINECODES OF SERVICE CABLES TO 2-WIRE (EVERYHING IS 4-WIRE IN THE BEGINNING BY CONSTRUCTION)
-    ###################################
-
-    for (b, branch) in data["branch"]
-        if length(branch["f_connections"]) == 4 && b ∈ ["29", "54", "41", "53", "42", "50", "52", "26", "10", "24", "23", "31", "39", "17", "47", "9"]
-            # 4-wire branches of a linecode which is not the default one
-            r = eng["linecode"]["hydrogen"]["rs"]
-            x = eng["linecode"]["hydrogen"]["xs"]
-            eng["line"][branch["name"]]["linecode"] = "hydrogen"
-        end
-        if b ∈ ["32", "1", "2", "51", "27", "33", "28", "25", "49", "5", "43", "34", "44", "55", "37", "12", "20", "6", "7", "57", "4", "22"]
-            # two-wire bits of one linecode
-            r = eng["linecode"]["abc2x16_lv_oh_2w_bundled"]["rs"]
-            x = eng["linecode"]["abc2x16_lv_oh_2w_bundled"]["xs"]
-            eng["line"][branch["name"]]["linecode"] = "abc2x16_lv_oh_2w_bundled"
-        else
-            if length(branch["f_connections"]) == 2 # two-wire bits of other linecode
-                r = eng["linecode"]["tw2x16_lv_oh_2w_bundled"]["rs"]
-                x = eng["linecode"]["tw2x16_lv_oh_2w_bundled"]["xs"]    
-                eng["line"][branch["name"]]["linecode"] = "tw2x16_lv_oh_2w_bundled"
-            else # default four-wire linecode        
-                r = eng["linecode"]["pluto"]["rs"]
-                x = eng["linecode"]["pluto"]["xs"]     
-            end
-        end
-        l = eng["line"][branch["name"]]["length"]
-        branch["br_r"] = r.*l./z_pu
-        branch["br_x"] = x.*l./z_pu
-    end
+    build_linecode_for_ug_oh_ground_30l!(data, eng) # assigns the set of linecodes we elected for this case and builds R,X
 
     ######## SET MEASUREMENT SPECS
         
-    max_volt_error = 2.3 # in Volts\
+    max_volt_error = 2.3 # in Volts
     max_power_error = 0.1 # kW
     original_sourcebus_id = collect(keys(data["settings"]["vbases_default"]))[1]
 
@@ -139,12 +108,7 @@ function run_impedance_estimation_oh_ground_30_load_case(result_path::String, ie
     mn_data["nw"]["1"]["rho"] = Dict()
     mn_data["nw"]["1"]["alpha"] = Dict()
 
-    if use_length_bounds
-        for (b, branch) in mn_data["nw"]["1"]["branch"]
-            branch["l_min"] = branch["orig_length"]*(1-length_bounds_percval)/1000 # / 1000 because length data is in m but length var is in km
-            branch["l_max"] = branch["orig_length"]*(1+length_bounds_percval)/1000 # / 1000 because length data is in m but length var is in km
-        end
-    end
+    if use_length_bounds add_length_bounds!(mn_data, length_bounds_percval) end
 
     sol = _IMP.solve_imp_est_carson(mn_data, ie_solver)
     sol = _IMP.build_rx_sol_dict(mn_data, sol) # completes solution information getting together things that are not reported
