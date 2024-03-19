@@ -217,7 +217,7 @@ function get_cumulative_impedance_of_loads_from_sol(mn_data::Dict, sol::Dict, di
     return load_dist_dict
 end
 
-function drop_results(case, result_path, other_string, summary_df, sol, mn_data, timestep_set, seed, add_meas_noise, power_mult, A_p_bounds, dist_bounds, r_ac_error, use_length_bounds, length_bounds_percval, imp_est, imp_true, real_volts, est_volts, exploit_equal_crossection, exploit_squareness, exploit_horizontality; save_summary::Bool=true)
+function drop_results(case, result_path, other_string, summary_df, sol, mn_data, timestep_set, seed, add_meas_noise, power_mult, A_p_bounds, dist_bounds, r_ac_error, use_length_bounds, length_bounds_percval, imp_est, imp_true, real_volts, real_vas, est_volts, est_vas, exploit_equal_crossection, exploit_squareness, exploit_horizontality; save_summary::Bool=true)
     
     # drop impedances as JSONs
     imp_est  = JSON.json(imp_est)
@@ -232,6 +232,9 @@ function drop_results(case, result_path, other_string, summary_df, sol, mn_data,
     # drop voltages as CSVs
     real_volts |> CSV.write("$(result_path)_$(case)_real_volts_scenario_$(seed)_$(other_string).csv")
     est_volts |> CSV.write("$(result_path)_$(case)_est_volts_scenario_$(seed)_$(other_string).csv")
+
+    real_vas |> CSV.write("$(result_path)_$(case)_real_vas_scenario_$(seed)_$(other_string).csv")
+    est_vas |> CSV.write("$(result_path)_$(case)_est_vas_scenario_$(seed)_$(other_string).csv")
 
     # drop general result summary
     summary_df = build_summary_results_csv(case, result_path, other_string, summary_df, sol, timestep_set, seed, add_meas_noise, power_mult, A_p_bounds, dist_bounds, r_ac_error, use_length_bounds, length_bounds_percval, save_summary, exploit_equal_crossection, exploit_squareness, exploit_horizontality)
@@ -293,6 +296,17 @@ function build_estimated_volts_dataframe(sol::Dict, mn_data::Dict, seed::Int)
         push!(est_volts, vcat([nw["bus"]["$(load["load_bus"])"]["vm"][1] for (l,load) in mn_data["nw"]["1"]["load"]], [seed, parse(Int, n)]))
     end
     return est_volts
+end
+
+function build_estimated_vas_dataframe(sol::Dict, mn_data::Dict, seed::Int)
+    est_vas = _DF.DataFrame(fill([], length(mn_data["nw"]["1"]["load"])+2), vcat(["load_$(l)_ph_$(load["connections"][1])" for (l,load) in mn_data["nw"]["1"]["load"]], ["scenario_id", "time_step"]))
+    for (n, nw) in sol["solution"]["nw"]
+        for (i, bus) in nw["bus"]
+            bus["va"] = [atan(bus["vi"][i] / bus["vr"][i] ) for i in 1:(length(bus["vr"])-1)]
+        end
+        push!(est_vas, vcat([nw["bus"]["$(load["load_bus"])"]["va"][1] for (l,load) in mn_data["nw"]["1"]["load"]], [seed, parse(Int, n)]))
+    end
+    return est_vas
 end
 
 function build_summary_results_csv(case, result_path, other_string, summary_df, sol, timestep_set ,seed, add_meas_noise, power_mult, A_p_bounds, dist_bounds, r_ac_error, use_length_bounds, length_bounds_percval, save_as_csv, exploit_equal_crossection, exploit_squareness, exploit_horizontality)

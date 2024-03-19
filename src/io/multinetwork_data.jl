@@ -10,6 +10,7 @@ function build_multinetwork_dsse_data(data::Dict, df::_DF.DataFrame, pf_solver; 
     end
 
     real_volts = _DF.DataFrame(fill([], length(data["load"])+2), vcat(["load_$(l)_ph_$(load["connections"][1])" for (l,load) in data["load"]], ["scenario_id", "time_step"]))
+    real_vas = _DF.DataFrame(fill([], length(data["load"])+2), vcat(["load_$(l)_ph_$(load["connections"][1])" for (l,load) in data["load"]], ["scenario_id", "time_step"]))
 
     power_unit = data["settings"]["sbase"]
     @info "The power unit in use is $power_unit and the load multiplication factor is $power_mult"
@@ -32,8 +33,10 @@ function build_multinetwork_dsse_data(data::Dict, df::_DF.DataFrame, pf_solver; 
         end
         # converts vr and vi to vm (phase to neutral)
         pf_solution_to_voltage_magnitudes!(pf_results) 
+        pf_solution_to_voltage_angles!(pf_results) 
 
         push!(real_volts, vcat([pf_results["solution"]["bus"]["$(load["load_bus"])"]["vm"][1] for (l,load) in data["load"]], [seed, ts]))
+        push!(real_vas, vcat([pf_results["solution"]["bus"]["$(load["load_bus"])"]["va"][1] for (l,load) in data["load"]], [seed, ts]))
 
         # adds the powerflow results (P, Q, |U|) of this timestep on the mn dict, for future reference/comparison
         add_pf_result_to_mn_data!(mn_data["nw"]["$ts_id"], pf_results)
@@ -45,7 +48,7 @@ function build_multinetwork_dsse_data(data::Dict, df::_DF.DataFrame, pf_solver; 
         mn_data["nw"]["$ts_id"]["meas"] = deepcopy(data["meas"]);
 
     end
-    return mn_data, real_volts
+    return mn_data, real_volts, real_va
 end
 
 function build_multinetwork_dsse_data_with_shunts(data::Dict, df::_DF.DataFrame, pf_solver; timestep_set::Union{Vector{Int64}, UnitRange{Int64}} = 1:20, add_noise::Bool=false, loads_with_shunts::Vector{String} = ["1"], gs::Vector{Float64} = [50.], bs::Vector{Float64} = [15.], seed::Int64=2, power_mult::Float64=1.0)
@@ -59,7 +62,8 @@ function build_multinetwork_dsse_data_with_shunts(data::Dict, df::_DF.DataFrame,
     end
 
     real_volts = _DF.DataFrame(fill([], length(data["load"])+2), vcat(["load_$(l)_ph_$(load["connections"][1])" for (l,load) in data["load"]], ["scenario_id", "time_step"]))
-
+    real_vas = _DF.DataFrame(fill([], length(data["load"])+2), vcat(["load_$(l)_ph_$(load["connections"][1])" for (l,load) in data["load"]], ["scenario_id", "time_step"]))
+    
     count_shunts = 1
     for (l, load) in data["load"]
         if l ∈ loads_with_shunts
@@ -98,6 +102,7 @@ function build_multinetwork_dsse_data_with_shunts(data::Dict, df::_DF.DataFrame,
         pf_solution_to_voltage_magnitudes!(pf_results)
         
         push!(real_volts, vcat([pf_results["solution"]["bus"]["$(load["load_bus"])"]["vm"][1] for (l,load) in data["load"]], [seed, ts]))
+        push!(real_vas, vcat([pf_results["solution"]["bus"]["$(load["load_bus"])"]["va"][1] for (l,load) in data["load"]], [seed, ts]))
 
         # adds the powerflow results (P, Q, |U|) of this timestep on the mn dict, for future reference/comparison
         add_pf_result_to_mn_data!(mn_data["nw"]["$ts_id"], pf_results)
@@ -109,7 +114,7 @@ function build_multinetwork_dsse_data_with_shunts(data::Dict, df::_DF.DataFrame,
         mn_data["nw"]["$ts_id"]["meas"] = deepcopy(data["meas"])
 
     end
-    return mn_data, real_volts
+    return mn_data, real_volts, real_vas
 end
 
 
@@ -133,6 +138,12 @@ end
 function pf_solution_to_voltage_magnitudes!(sol::Dict)
     for (i, bus) in sol["solution"]["bus"]
         bus["vm"] = sqrt.( (bus["vr"][1:(end-1)] .- bus["vr"][end]).^2 + (bus["vi"][1:(end-1)] .- bus["vi"][end]).^2 )
+    end
+end
+
+function pf_solution_to_voltage_angles!(sol::Dict)
+    for (i, bus) in sol["solution"]["bus"]
+        bus["va"] = [atan(bus["vi"][i] / bus["vr"][i] ) for i in 1:(length(bus["vr"])-1)]
     end
 end
 

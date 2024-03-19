@@ -139,7 +139,10 @@ function powerflow_validation(feeder_name, oh_or_ug, result_path::String, estima
     data, eng, z_pu = prepare_math_eng_data(profiles ;feeder_name = feeder_name, oh_or_ug = oh_or_ug)
 
     real_volts = _DF.DataFrame(fill([], length(data["load"])+2), vcat(["load_$(l)_ph_$(load["connections"][1])" for (l,load) in data["load"]], ["time_step", "termination_status"]))
-    est_volts = _DF.DataFrame(fill([], length(data["load"])+2), vcat(["load_$(l)_ph_$(load["connections"][1])" for (l,load) in data["load"]], ["time_step", "termination_status"]))
+    est_volts  = _DF.DataFrame(fill([], length(data["load"])+2), vcat(["load_$(l)_ph_$(load["connections"][1])" for (l,load) in data["load"]], ["time_step", "termination_status"]))
+
+    real_va = _DF.DataFrame(fill([], length(data["load"])+2), vcat(["load_$(l)_ph_$(load["connections"][1])" for (l,load) in data["load"]], ["time_step", "termination_status"]))
+    est_va  = _DF.DataFrame(fill([], length(data["load"])+2), vcat(["load_$(l)_ph_$(load["connections"][1])" for (l,load) in data["load"]], ["time_step", "termination_status"]))
 
     if feeder_name == "30load-feeder"
         if oh_or_ug == "ug"
@@ -178,14 +181,20 @@ function powerflow_validation(feeder_name, oh_or_ug, result_path::String, estima
         # converts vr and vi to vm (phase to neutral)
         _IMP.pf_solution_to_voltage_magnitudes!(real_pf_results) 
         _IMP.pf_solution_to_voltage_magnitudes!(est_pf_results) 
+        _IMP.pf_solution_to_voltage_angles!(real_pf_results)
+        _IMP.pf_solution_to_voltage_angles!(est_pf_results)
 
         push!(real_volts, vcat([real_pf_results["solution"]["bus"]["$(load["load_bus"])"]["vm"][1] for (l,load) in data["load"]], [ts, real_pf_results["termination_status"]]))
         push!(est_volts, vcat([est_pf_results["solution"]["bus"]["$(load["load_bus"])"]["vm"][1] for (l,load) in data["load"]], [ts, est_pf_results["termination_status"]]))
+        push!(real_va, vcat([real_pf_results["solution"]["bus"]["$(load["load_bus"])"]["va"][1] for (l,load) in data["load"]], [ts, real_pf_results["termination_status"]]))
+        push!(est_va, vcat([est_pf_results["solution"]["bus"]["$(load["load_bus"])"]["va"][1] for (l,load) in data["load"]], [ts, est_pf_results["termination_status"]]))
 
     end
 
-    CSV.write(result_path*"/pf_validation_real.csv", real_volts)
-    CSV.write(result_path*"/pf_validation_est.csv" ,  est_volts)
+    CSV.write(result_path*"/pf_validation_real_vm.csv", real_volts)
+    CSV.write(result_path*"/pf_validation_est_vm.csv" ,  est_volts)
+    CSV.write(result_path*"/pf_validation_real_va.csv", real_va)
+    CSV.write(result_path*"/pf_validation_est_va.csv" ,  est_va)
 end
 
 function powerflow_validation_boxplot(est_pf::Union{String, _DF.DataFrame}, real_pf::Union{String, _DF.DataFrame}; per_user::Bool=false, yticks=[], show_sm_info::Bool=false)

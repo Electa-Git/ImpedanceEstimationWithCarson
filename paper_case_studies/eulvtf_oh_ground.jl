@@ -124,9 +124,10 @@ function run_impedance_estimation_oh_ground_eulvtf(result_path::String, ie_solve
     imp_true = _IMP.get_cumulative_impedance_of_loads_from_data(mn_data, true)
 
     est_volts = _IMP.build_estimated_volts_dataframe(sol, mn_data, scenario_id)
+    est_vas = _IMP.build_estimated_vas_dataframe(sol, mn_data, scenario_id)
 
     case = "eulvtf_oh_ground_"
 
-    _IMP.drop_results(case, result_path, "", [], sol, mn_data, t_start, t_end, scenario_id, add_meas_noise, power_mult, false, false, false, use_length_bounds, length_bounds_percval, imp_est, imp_true, real_volts, est_volts, exploit_equal_crossection, exploit_squaredness, exploit_horizontality)
+    _IMP.drop_results(case, result_path, "", [], sol, mn_data, t_start, t_end, scenario_id, add_meas_noise, power_mult, false, false, false, use_length_bounds, length_bounds_percval, imp_est, imp_true, real_volts, real_vas, est_volts, est_vas, exploit_equal_crossection, exploit_squaredness, exploit_horizontality)
     _IMP.drop_shunt_results(case, result_path, "", sol, mn_data, scenario_id, t_start, t_end, shunt_resistive)
 end
