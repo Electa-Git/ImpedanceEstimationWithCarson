@@ -6,15 +6,14 @@ import Ipopt
 
 include("utils.jl")
 
-
 function run_impedance_estimation_ug_noshunt_eulvtf(result_path::String, ie_solver, pf_solver, profiles::_DF.DataFrame, t_start::Int, t_end::Int; scenario_id::Int = 1, add_meas_noise::Bool=true, power_mult::Float64=1., use_length_bounds::Bool=true, length_bounds_percval::Float64=0.10, exploit_equal_crossection::Bool=false, exploit_squaredness::Bool=false, exploit_horizontality::Bool=false)    
 
     data, eng, z_pu = prepare_math_eng_data(profiles, feeder_name = "eulvtf")
 
-    build_linecode_for_ug_noshunt_eulvtf!(data, eng) # assigns the set of linecodes we elected for this case and builds R,X
+    build_linecode_for_ug_noshunt_eulvtf!(data, eng, z_pu) # assigns the set of linecodes we elected for this case and builds R,X
 
     ######## SET MEASUREMENT SPECS
-        
+    
     max_volt_error = 2.3 # in Volts\
     max_power_error = 0.1 # kW
     original_sourcebus_id = collect(keys(data["settings"]["vbases_default"]))[1]
@@ -26,9 +25,9 @@ function run_impedance_estimation_ug_noshunt_eulvtf(result_path::String, ie_solv
     ############### CREATE MULTINETWORK DATA WITH MEASUREMENT TIMESERIES ###############
     # it runs a powerflow for each time step first, so it takes some time...
 
-    mn_data, real_volts = _IMP.build_multinetwork_dsse_data(data, profiles, pf_solver, σ_v, σ_d, σ_g; t_start=t_start, t_end=t_end, add_noise=add_meas_noise, seed = scenario_id, power_mult = power_mult)
+    mn_data, real_volts, real_vas = _IMP.build_multinetwork_dsse_data(data, profiles, pf_solver; timestep_set=t_start:t_end, add_noise=add_meas_noise, seed = scenario_id, power_mult = power_mult)
 
-    add_material_properties_for_ug_noshunt_eulvtf!(mn_data)
+    add_material_properties_for_ug_noshunt_eulvtf!(mn_data, eng)
 
     make_all_branches_untrustworthy!(mn_data, eng)
 

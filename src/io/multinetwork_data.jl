@@ -1,5 +1,4 @@
 function build_multinetwork_dsse_data(data::Dict, df::_DF.DataFrame, pf_solver; timestep_set::Union{Vector{Int64}, UnitRange{Int64}} = 1:20, add_noise::Bool=false, seed::Int64=2, power_mult::Float64=1.0)
-
     mn_data = Dict{String, Any}()
     mn_data["multinetwork"] = true
     mn_data["nw"] = Dict{String, Any}()
@@ -42,13 +41,13 @@ function build_multinetwork_dsse_data(data::Dict, df::_DF.DataFrame, pf_solver; 
         add_pf_result_to_mn_data!(mn_data["nw"]["$ts_id"], pf_results)
 
         # converts the powerflow results into (noisy or not) measurements
-        add_measurements!(data, pf_results, add_noise = add_noise, seed = seed, include_transfo_meas = false)
+        add_measurements!(data, pf_results; add_noise = add_noise, seed = seed, include_transfo_meas = false)
 
         # store this timestep in multinetwork dict
         mn_data["nw"]["$ts_id"]["meas"] = deepcopy(data["meas"]);
 
     end
-    return mn_data, real_volts, real_va
+    return mn_data, real_volts, real_vas
 end
 
 function build_multinetwork_dsse_data_with_shunts(data::Dict, df::_DF.DataFrame, pf_solver; timestep_set::Union{Vector{Int64}, UnitRange{Int64}} = 1:20, add_noise::Bool=false, loads_with_shunts::Vector{String} = ["1"], gs::Vector{Float64} = [50.], bs::Vector{Float64} = [15.], seed::Int64=2, power_mult::Float64=1.0)
@@ -108,7 +107,7 @@ function build_multinetwork_dsse_data_with_shunts(data::Dict, df::_DF.DataFrame,
         add_pf_result_to_mn_data!(mn_data["nw"]["$ts_id"], pf_results)
 
         # converts the powerflow results into (noisy or not) measurements
-        add_measurements!(data, pf_results, add_noise = add_noise, seed = seed, include_transfo_meas = true)
+        add_measurements!(data, pf_results; add_noise = add_noise, seed = seed, include_transfo_meas = true)
 
         # store this timestep in multinetwork dict
         mn_data["nw"]["$ts_id"]["meas"] = deepcopy(data["meas"])

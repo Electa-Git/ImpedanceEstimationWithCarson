@@ -68,7 +68,7 @@ function run_impedance_estimation_oh_ground_eulvtf(result_path::String, ie_solve
     buses_with_shunts = [data["load"][l]["load_bus"] for l in loads_with_shunts]
     gs = _RAN.rand([10., 20., 30., 40., 50., 60., 70., 80.], 25)
     bs = shunt_resistive ? gs.*0. : gs./(3 * z_pu)
-    mn_data, real_volts = _IMP.build_multinetwork_dsse_data_with_shunts(data, profiles, pf_solver, σ_v, σ_d, σ_g; loads_with_shunts=loads_with_shunts, gs = gs, bs= bs, t_start=t_start, t_end=t_end, add_noise=add_meas_noise, seed = scenario_id, power_mult = power_mult)
+    mn_data, real_volts = _IMP.build_multinetwork_dsse_data_with_shunts(data, profiles, pf_solver; loads_with_shunts=loads_with_shunts, gs = gs, bs= bs, timestep_set=t_start:t_end, add_noise=add_meas_noise, seed = scenario_id, power_mult = power_mult)
 
     material_resist_dict = Dict(
         "pluto" => 46.63530931436062,
