@@ -32,6 +32,11 @@ function add_material_properties_for_ug_noshunt_eulvtf!(mn_data, eng)
             )
         end
     end
+
+    for (b,bus) in mn_data["nw"]["1"]["bus"]
+        bus["imp_grounded"] = fill(false, length(bus["terminals"]))
+    end 
+
     return mn_data
 end
 
@@ -87,6 +92,43 @@ function build_linecode_for_ug_noshunt_30l!(data, eng, z_pu) # assigns the set o
     return data,eng
 end
 
+function add_material_properties_for_oh_ground_30l!(mn_data, eng, buses_with_shunts)
+    
+    material_resist_dict = Dict(
+        "pluto" => 46.63530931436062,
+        "hydrogen" => 24.047320966903072,
+        "abc2x16_lv_oh_2w_bundled" => 44.72977629032573,
+        "tw2x16_lv_oh_2w_bundled" => 36.23111879516384
+    )
+
+    mn_data["nw"]["1"]["linecode_map"] = Dict{Int, Any}() 
+    for (id, code) in enumerate(keys(eng["linecode"]))
+        if code ∈ ["tw2x16_lv_oh_2w_bundled", "abc2x16_lv_oh_2w_bundled"]
+            mn_data["nw"]["1"]["linecode_map"][id] = Dict{String, Any}(
+                "name" => code,
+                "n_wires" => 2,
+                "r_material" => fill(material_resist_dict[code], 2)
+            )
+        elseif code ∈ ["pluto", "hydrogen"]
+            mn_data["nw"]["1"]["linecode_map"][id] = Dict{String, Any}(
+                "name" => code,
+                "n_wires" => 4,
+                "r_material" => fill(material_resist_dict[code], 4)
+            )
+        end
+    end
+
+    for (b,bus) in mn_data["nw"]["1"]["bus"]
+        if parse(Int, b) ∉ buses_with_shunts
+            bus["imp_grounded"] = fill(false, length(bus["terminals"]))
+        else
+            bus["imp_grounded"] = [false, true]
+        end
+    end  
+
+    return mn_data
+end
+
 function add_material_properties_for_ug_noshunt_30l!(mn_data, eng)
     material_resist_dict = Dict(
         "uglv_185al_xlpe/nyl/pvc_ug_2w_bundled" => 45.66553107812399,
@@ -118,7 +160,78 @@ function add_material_properties_for_ug_noshunt_30l!(mn_data, eng)
     return mn_data
 end
 
-function build_linecode_for_oh_ground_30l!(data, eng) # assigns the set of linecodes we elected for this case and builds R,X
+function add_material_properties_for_oh_ground_eulvtf!(mn_data, eng, buses_with_shunts)
+    material_resist_dict = Dict(
+        "pluto" => 46.63530931436062,
+        "hydrogen" => 24.047320966903072,
+        "abc2x16_lv_oh_2w_bundled" => 44.72977629032573,
+        "tw2x16_lv_oh_2w_bundled" => 36.23111879516384
+    )
+
+    mn_data["nw"]["1"]["linecode_map"] = Dict{Int, Any}() 
+    for (id, code) in enumerate(keys(eng["linecode"]))
+        if code ∈ ["tw2x16_lv_oh_2w_bundled", "abc2x16_lv_oh_2w_bundled"]
+            mn_data["nw"]["1"]["linecode_map"][id] = Dict{String, Any}(
+                "name" => code,
+                "n_wires" => 2,
+                "r_material" => fill(material_resist_dict[code], 2)
+            )
+        elseif code ∈ ["pluto", "hydrogen"]
+            mn_data["nw"]["1"]["linecode_map"][id] = Dict{String, Any}(
+                "name" => code,
+                "n_wires" => 4,
+                "r_material" => fill(material_resist_dict[code], 4)
+            )
+        end
+    end
+
+    for (b,bus) in mn_data["nw"]["1"]["bus"]
+        if parse(Int, b) ∉ buses_with_shunts
+            bus["imp_grounded"] = fill(false, length(bus["terminals"]))
+        else
+            bus["imp_grounded"] = [false, true]
+        end
+    end  
+
+    return mn_data
+end
+
+
+function build_linecode_for_oh_ground_eulvtf(data, eng, z_pu) # assigns the set of linecodes we elected for this case and builds R,X
+    
+    for (b, branch) in data["branch"]
+        if length(branch["f_connections"]) == 4 && b ∈ ["29", "1", "54", "78", "81", "101", "65", "53", "106", "50", "52", "92", "88", "24", "87", "58", "25", "23", "49", "31", "34"]
+            # 4-wire branches of a linecode which is not the default one
+            r = eng["linecode"]["hydrogen"]["rs"]
+            x = eng["linecode"]["hydrogen"]["xs"]
+            eng["line"][branch["name"]]["linecode"] = "hydrogen"
+        end
+        if b ∈ ["32", "2", "105", "109", "74", "41", "51", "27", "75", "42", "33", "28", "63", "93", "26", "10", "77", "59", "5", "89", "62", "43", "90", "39"]
+            # two-wire bits of one linecode
+            r = eng["linecode"]["abc2x16_lv_oh_2w_bundled"]["rs"]
+            x = eng["linecode"]["abc2x16_lv_oh_2w_bundled"]["xs"]
+            eng["line"][branch["name"]]["linecode"] = "abc2x16_lv_oh_2w_bundled"
+        else
+            if length(branch["f_connections"]) == 2 # two-wire bits of other linecode
+                r = eng["linecode"]["tw2x16_lv_oh_2w_bundled"]["rs"]
+                x = eng["linecode"]["tw2x16_lv_oh_2w_bundled"]["xs"]    
+                eng["line"][branch["name"]]["linecode"] = "tw2x16_lv_oh_2w_bundled"
+            else # default four-wire linecode        
+                r = eng["linecode"]["pluto"]["rs"]
+                x = eng["linecode"]["pluto"]["xs"]    
+            end
+        end
+        l = eng["line"][branch["name"]]["length"]
+        branch["br_r"] = r.*l./z_pu
+        branch["br_x"] = x.*l./z_pu
+    end
+
+    return data,eng
+end
+
+
+function build_linecode_for_oh_ground_30l!(data, eng, z_pu) # assigns the set of linecodes we elected for this case and builds R,X
+    
     for (b, branch) in data["branch"]
         if length(branch["f_connections"]) == 4 && b ∈ ["29", "54", "41", "53", "42", "50", "52", "26", "10", "24", "23", "31", "39", "17", "47", "9"]
             # 4-wire branches of a linecode which is not the default one
@@ -145,6 +258,7 @@ function build_linecode_for_oh_ground_30l!(data, eng) # assigns the set of linec
         branch["br_r"] = r.*l./z_pu
         branch["br_x"] = x.*l./z_pu
     end
+    return data,eng
 end
 
 function prepare_math_eng_data(profiles;feeder_name::String="30load-feeder", oh_or_ug::String="ug")

@@ -48,7 +48,7 @@ function build_multinetwork_dsse_data(data::Dict, df::_DF.DataFrame, pf_solver; 
         mn_data["nw"]["$ts_id"]["meas"] = deepcopy(data["meas"]);
 
     end
-    return mn_data, real_volts, real_va
+    return mn_data, real_volts, real_vas
 end
 
 function build_multinetwork_dsse_data_with_shunts(data::Dict, df::_DF.DataFrame, pf_solver; timestep_set::Union{Vector{Int64}, UnitRange{Int64}} = 1:20, add_noise::Bool=false, loads_with_shunts::Vector{String} = ["1"], gs::Vector{Float64} = [50.], bs::Vector{Float64} = [15.], seed::Int64=2, power_mult::Float64=1.0)
@@ -100,6 +100,7 @@ function build_multinetwork_dsse_data_with_shunts(data::Dict, df::_DF.DataFrame,
         end
         # converts vr and vi to vm (phase to neutral)
         pf_solution_to_voltage_magnitudes!(pf_results)
+        pf_solution_to_voltage_angles!(pf_results)
         
         push!(real_volts, vcat([pf_results["solution"]["bus"]["$(load["load_bus"])"]["vm"][1] for (l,load) in data["load"]], [seed, ts]))
         push!(real_vas, vcat([pf_results["solution"]["bus"]["$(load["load_bus"])"]["va"][1] for (l,load) in data["load"]], [seed, ts]))

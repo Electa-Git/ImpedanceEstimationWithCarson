@@ -134,7 +134,7 @@ function generate_summary(folders::Vector{String})
     return super_summary
 end
 
-function powerflow_validation(feeder_name, oh_or_ug, result_path::String, estimated_linecode::String, estimated_branch_length::String, profiles, validation_timesteps, pf_solver; power_mult::Float64=2.)
+function powerflow_validation(feeder_name, oh_or_ug, result_path::String, estimated_linecode::String, estimated_branch_length::String, profiles, extra_id::String, validation_timesteps, pf_solver; power_mult::Float64=2.)
         
     data, eng, z_pu = prepare_math_eng_data(profiles ;feeder_name = feeder_name, oh_or_ug = oh_or_ug)
 
@@ -191,10 +191,10 @@ function powerflow_validation(feeder_name, oh_or_ug, result_path::String, estima
 
     end
 
-    CSV.write(result_path*"/pf_validation_real_vm.csv", real_volts)
-    CSV.write(result_path*"/pf_validation_est_vm.csv" ,  est_volts)
-    CSV.write(result_path*"/pf_validation_real_va.csv", real_va)
-    CSV.write(result_path*"/pf_validation_est_va.csv" ,  est_va)
+    CSV.write(result_path*"/pf_validation_real_vm"*extra_id*".csv", real_volts)
+    CSV.write(result_path*"/pf_validation_est_vm"*extra_id*".csv" ,  est_volts)
+    CSV.write(result_path*"/pf_validation_real_va"*extra_id*".csv", real_va)
+    CSV.write(result_path*"/pf_validation_est_va"*extra_id*".csv" ,  est_va)
 end
 
 function powerflow_validation_boxplot(est_pf::Union{String, _DF.DataFrame}, real_pf::Union{String, _DF.DataFrame}; per_user::Bool=false, yticks=[], show_sm_info::Bool=false)

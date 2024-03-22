@@ -250,7 +250,7 @@ function drop_results(case, result_path, other_string, summary_df, sol, mn_data,
 
 end
 
-function drop_shunt_results(case, result_path, other_string, sol, mn_data, seed, timestep_set, shunt_resistive)
+function drop_shunt_results(case, result_path, other_string, sol, mn_data, seed, shunt_resistive)
 
     shunt_dict = Dict{String, Any}()
     for (s, shunt) in mn_data["nw"]["1"]["shunt"]
@@ -267,7 +267,7 @@ function drop_shunt_results(case, result_path, other_string, sol, mn_data, seed,
         end
     end
     shunt_dict = JSON.json(shunt_dict)
-    open("$(result_path)_$(case)_shunts_scenario_$(seed)_$(other_string)_ts_$(t_start)_te_$(t_end)_resistive_$(shunt_resistive).json","w") do f 
+    open("$(result_path)_$(case)_shunts_scenario_$(seed)_$(other_string)_resistive_$(shunt_resistive).json","w") do f 
         write(f, shunt_dict) 
     end
 
