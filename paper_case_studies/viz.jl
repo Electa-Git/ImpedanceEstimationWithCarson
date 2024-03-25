@@ -2,9 +2,9 @@ import StatsPlots as _SP
 import Format
 
 """
-plots a boxplot for every user. different sets of dots for different options / estimated paths
+plots a dot. different sets of dots for different options / estimated paths
 """
-function cumulative_zrx_per_user_boxplot(true_impedance_dict::Dict, est_impedance_path::String, case::String; whatt::String="Zc", ytickz::Vector=[])
+function cumulative_zrx_per_user(true_impedance_dict::Dict, est_impedance_path::String, case::String; whatt::String="Zc", ytickz::Vector=[])
     
     est_dicts = [joinpath(est_impedance_path, file) for file in readdir(est_impedance_path) if occursin("imp_est", file) && occursin(case, file)]
 
@@ -34,18 +34,35 @@ function cumulative_zrx_per_user_boxplot(true_impedance_dict::Dict, est_impedanc
 end
 
 """
-plots a dot for every user
+plots a boxplot with one entry for every user
 """
-function cumulative_zrx_per_user(true_impedance_dict::Dict, est_impedance_dict::Dict, case::String; whatt::String="Zc", ytickz::Vector=[])
+function cumulative_zrx_boxplot(true_impedance_dict::Dict, est_impedance_path::String, case::String; whatt::String="Zc", ytickz::Vector=[])
+    
+    est_dicts = [joinpath(est_impedance_path, file) for file in readdir(est_impedance_path) if occursin("imp_est", file) && occursin(case, file)]
 
-    xticks = (1:length(true_impedance_dict), [parse(Int, k) for (k,v) in true_impedance_dict])
+    nr_scenarios = unique([split(ed, "scenario_")[2][1] for ed in est_dicts])
+    other_identifiers = unique([split(ed, "__")[end][1:end-5] for ed in est_dicts])
 
-    p = _SP.scatter([(v["$(whatt)_true"]-est_impedance_dict[k]["$(whatt)_est"])/v["$(whatt)_true"]*100 for (k,v) in true_impedance_dict],
-                    ylabel = "($(whatt)ᵗʳᵘᵉ - $(whatt)ᵉˢᵗ)/$(whatt)ᵗʳᵘᵉ × 100 [%]", 
+    idx = findfirst(x->occursin("scenario_$(minimum(nr_scenarios))", x), est_dicts)
+    starter_est = est_dicts[idx]
+    starter_label = split(starter_est, "__")[end][1:end-5]
+
+    p = _SP.boxplot([(v["$(whatt)_true"]-JSON.parsefile(joinpath(est_impedance_path, starter_est))[k]["$(whatt)_est"])/v["$(whatt)_true"]*100 for (k,v) in true_impedance_dict],
+                    ylabel = "($(whatt)ᵗʳᵘᵉ - $(whatt)ᵉˢᵗ)/$(whatt)ᵗʳᵘᵉ × 100 [%]", labels = "sc. $(minimum(nr_scenarios)), id. $(starter_label)",
                     xlabel = "User id. [-]", xticks = xticks)
+
+    for ed in est_dicts
+        if ed != starter_est
+            sc = split(ed, "scenario_")[2][1]
+            id = split(ed, "__")[end][1:end-5]
+           _SP.scatter!([(v["$(whatt)_true"]-JSON.parsefile(joinpath(est_impedance_path, ed))[k]["$(whatt)_est"])/v["$(whatt)_true"]*100 for (k,v) in true_impedance_dict],
+                        labels = "sc. $sc, id. $id")
+        end
+    end
 
     return p
 end
+
 
 function rx_linecode_matrix_estimated()
     
@@ -68,7 +85,7 @@ end
 function rx_linecode_matrix_exact(linecode_name::String; whatt::String="rs")
 
     eng = _PMD.parse_file(_IMP.NTW_DATA_DIR*"/eulvtf/Master_oh.dss", data_model = _PMD.ENGINEERING, transformations=[_PMD.transform_loops!,_PMD.remove_all_bounds!])
-    mat = eng["linecode"][linecode][whatt]
+    mat = eng["linecode"][linecode_name][whatt].*1000
 
     p = _SP.heatmap(zeros( size(mat)[1], size(mat)[1]),
                c = _SP.cgrad([:blue,:white,:red]),
@@ -147,6 +164,14 @@ function powerflow_validation(feeder_name, oh_or_ug, result_path::String, estima
     if feeder_name == "30load-feeder"
         if oh_or_ug == "ug"
             build_linecode_for_ug_noshunt_30l!(data,eng,z_pu)
+        else
+            build_linecode_for_oh_ground_30l!(data, eng, z_pu)
+        end
+    else
+        if oh_or_ug == "ug"
+            build_linecode_for_ug_noshunt_eulvtf!(data,eng,z_pu)
+        else
+            build_linecode_for_oh_ground_eulvtf!(data, eng, z_pu)
         end
     end
 
@@ -222,3 +247,4 @@ function powerflow_validation_boxplot(est_pf::Union{String, _DF.DataFrame}, real
 end
 
 # cumulative_zrx_per_user(JSON.parsefile(raw"C:\Users\mvanin\OneDrive - KU Leuven\Desktop\repos\DataDrivenImpedanceEstimationWithCarson\paper_results\30l_ug_most_restricted\_case30loads_series__imp_true_scenario_1_.json"), JSON.parsefile(raw"C:\Users\mvanin\OneDrive - KU Leuven\Desktop\repos\DataDrivenImpedanceEstimationWithCarson\paper_results\30l_ug_most_restricted\_case30loads_series__imp_est_scenario_1__ts_50_te_110.json"), " "; whatt="Xc")
+

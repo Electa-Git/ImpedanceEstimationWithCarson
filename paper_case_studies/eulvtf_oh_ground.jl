@@ -19,7 +19,7 @@ function run_impedance_estimation_oh_ground_eulvtf(result_path::String, ie_solve
 
     data, eng, z_pu = prepare_math_eng_data(profiles, feeder_name = "eulvtf", oh_or_ug = "oh")
 
-    data, eng = build_linecode_for_oh_ground_eulvtf!(data, eng, z_pu) # assigns the set of linecodes we elected for this case and builds R,X
+    data, eng = build_linecode_for_oh_ground_eulvtf(data, eng, z_pu) # assigns the set of linecodes we elected for this case and builds R,X
 
     mn_data, real_volts, real_vas = _IMP.build_multinetwork_dsse_data(data, profiles, pf_solver; timestep_set = timestep_set, add_noise=add_meas_noise, seed = scenario_id, power_mult = power_mult)
 
