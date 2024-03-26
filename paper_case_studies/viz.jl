@@ -48,14 +48,13 @@ function cumulative_zrx_boxplot(true_impedance_dict::Dict, est_impedance_path::S
     starter_label = split(starter_est, "__")[end][1:end-5]
 
     p = _SP.boxplot([(v["$(whatt)_true"]-JSON.parsefile(joinpath(est_impedance_path, starter_est))[k]["$(whatt)_est"])/v["$(whatt)_true"]*100 for (k,v) in true_impedance_dict],
-                    ylabel = "($(whatt)ᵗʳᵘᵉ - $(whatt)ᵉˢᵗ)/$(whatt)ᵗʳᵘᵉ × 100 [%]", labels = "sc. $(minimum(nr_scenarios)), id. $(starter_label)",
-                    xlabel = "User id. [-]", xticks = xticks)
+                    ylabel = "($(whatt)ᵗʳᵘᵉ - $(whatt)ᵉˢᵗ)/$(whatt)ᵗʳᵘᵉ × 100 [%]", labels = "sc. $(minimum(nr_scenarios)), id. $(starter_label)")
 
     for ed in est_dicts
         if ed != starter_est
             sc = split(ed, "scenario_")[2][1]
             id = split(ed, "__")[end][1:end-5]
-           _SP.scatter!([(v["$(whatt)_true"]-JSON.parsefile(joinpath(est_impedance_path, ed))[k]["$(whatt)_est"])/v["$(whatt)_true"]*100 for (k,v) in true_impedance_dict],
+           _SP.boxplot!([(v["$(whatt)_true"]-JSON.parsefile(joinpath(est_impedance_path, ed))[k]["$(whatt)_est"])/v["$(whatt)_true"]*100 for (k,v) in true_impedance_dict],
                         labels = "sc. $sc, id. $id")
         end
     end
@@ -63,29 +62,154 @@ function cumulative_zrx_boxplot(true_impedance_dict::Dict, est_impedance_path::S
     return p
 end
 
-
-function rx_linecode_matrix_estimated()
+"""
+plots a boxplot with one entry for every user
+"""
+function cumulative_zrx_boxplot_crossconstraint(general_result_path::String, case::String, power_mult::Float64; whatt::String="Zc", ytickz::Vector=[])
     
-    p = _SP.heatmap(zeros(4,4),
-               c = _SP.cgrad([:blue,:white,:red]),
-               clims=(-1, 1), legend = :none,
-               xticks = ([], []), yticks = ([], []), xaxis = false, yaxis=false, 
-               xlims=(-0.01, 4.01), ylims=(-0.01, 4.01),
-               aspect_ratio = 1/1.5 )
-    _SP.vline!([1,2,3], color=:lightgrey, linestyle = :dashdotdot)
-    _SP.hline!([1,2,3], color=:lightgrey, linestyle = :dashdotdot)
-    _SP.hline!([0.,4.], color=:black)
-    _SP.vline!([0.,4], color=:black)
+    folders = [f for f in readdir(general_result_path) if occursin(case, f)]
+    est_dicts = []
+    for folder in folders 
+        if isdir(joinpath(general_result_path, folder))
+            for file in readdir(joinpath(general_result_path, folder))
+                if occursin("imp_est", file) && occursin("power_mult_$(power_mult)", file)
+                    push!(est_dicts, joinpath(general_result_path, folder, file))
+                end
+            end
+        end
+    end
 
-    _SP.annotate!(1, 2, _SP.text("mytext", :black, :center, 10))
+    starter_est = est_dicts[1]
+    starter_label = split(starter_est, "\\")[end-1]
+
+    true_impedance_dict = JSON.parsefile(replace(starter_est, "est" => "true"))
+
+    p = _SP.boxplot([(v["$(whatt)_true"]-JSON.parsefile(starter_est)[k]["$(whatt)_est"])/v["$(whatt)_true"]*100 for (k,v) in true_impedance_dict],
+                    ylabel = "($(whatt)ᵗʳᵘᵉ - $(whatt)ᵉˢᵗ)/$(whatt)ᵗʳᵘᵉ × 100 [%]", labels = "$(starter_label) - power mult $power_mult")
+
+    for ed in est_dicts
+        if ed != starter_est
+           _SP.boxplot!([(v["$(whatt)_true"]-JSON.parsefile(ed)[k]["$(whatt)_est"])/v["$(whatt)_true"]*100 for (k,v) in true_impedance_dict],
+                        labels = "$(split(ed, "\\")[end-1]) - power mult $power_mult")
+        end
+    end
 
     return p
 end
 
-function rx_linecode_matrix_exact(linecode_name::String; whatt::String="rs")
+function rx_linecode_matrix_estimated_crossconstraint(general_result_path::String, case::String, feeder_id::String, power_mult::Float64)
+    
+    eng = _PMD.parse_file(_IMP.NTW_DATA_DIR*"/"*feeder_id*"/Master_oh.dss", data_model = _PMD.ENGINEERING, transformations=[_PMD.transform_loops!,_PMD.remove_all_bounds!])
 
-    eng = _PMD.parse_file(_IMP.NTW_DATA_DIR*"/eulvtf/Master_oh.dss", data_model = _PMD.ENGINEERING, transformations=[_PMD.transform_loops!,_PMD.remove_all_bounds!])
-    mat = eng["linecode"][linecode_name][whatt].*1000
+    for linecode in keys(eng["linecode"])
+
+        mat_rs = eng["linecode"][linecode]["rs"].*1000
+        mat_xs = eng["linecode"][linecode]["xs"].*1000
+
+        wires = size(mat_rs)[1]
+
+        if wires == 4
+            _SP.scatter([1:14], [mat_rs[1,1], mat_rs[2,2], mat_rs[3,3], mat_rs[4,4], mat_xs[1,1], mat_xs[2,2], mat_xs[3,3], mat_xs[4,4],
+                                    mat_xs[1,2], mat_xs[1,3], mat_xs[1,4], mat_xs[2,3], mat_xs[2,3], mat_xs[3,4]], 
+                                    xticks=((1:14), ["r_aa", "r_bb", "r_cc", "r_nn", "x_aa", "x_bb", "x_cc", "x_nn", "x_ab", "x_ac", "x_an", "x_bc", "x_bn", "x_cn"]), label = "true")
+        else
+            _SP.scatter([1:5], [mat_rs[1,1], mat_rs[2,2], mat_xs[1,1], mat_xs[2,2], mat_xs[1,2]], xticks=((1:5), ["r_pp", "r_nn", "x_pp", "x_nn", "x_pn"]), label = "true")
+        end
+        folders = [f for f in readdir(general_result_path) if occursin(case, f)]
+
+        for folder in folders 
+            if isdir(joinpath(general_result_path, folder))
+                for file in readdir(joinpath(general_result_path, folder))
+                    if occursin("linecode_results", file) && occursin("power_mult_$(power_mult)", file)
+                        df = CSV.read(joinpath(general_result_path, folder, file), _DF.DataFrame, ntasks = 1)
+                        if linecode ∈ df.linecode_name
+                            x_est = filter(x->x.linecode_name.==linecode, df).x_est[1][2:end-2]
+                            r_est = filter(x->x.linecode_name.==linecode, df).r_est[1][2:end-2]
+                            x_est = replace(x_est, ";" => "")
+                            r_est = replace(r_est, ";" => "")
+                            xs = parse.(Float64, split(x_est, " "))
+                            rs = parse.(Float64, split(r_est, " "))
+                            xs = reshape(xs, (wires,wires))
+                            rs = reshape(rs, (wires,wires))
+                            if wires == 4
+                                _SP.scatter!(Vector(1:14), [rs[1,1], rs[2,2], rs[3,3], rs[4,4], xs[1,1], xs[2,2], xs[3,3], xs[4,4], xs[1,2], xs[1,3], xs[1,4], xs[2,3], xs[2,3], xs[3,4]], label = "$folder")
+                            else
+                                _SP.scatter!(Vector(1:5), [rs[1], rs[4], xs[1], xs[4], xs[2]], label = "$folder")
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        _SP.savefig(joinpath(general_result_path, "linecode_$(split(linecode, "/")[1])_results_case_$(case)_power_mult_$(power_mult).png"))
+    end
+end
+
+function rx_linecode_matrix_estimated_crossconstraint_perc(general_result_path::String, case::String, feeder_id::String, power_mult::Float64)
+    
+    eng = _PMD.parse_file(_IMP.NTW_DATA_DIR*"/"*feeder_id*"/Master_oh.dss", data_model = _PMD.ENGINEERING, transformations=[_PMD.transform_loops!,_PMD.remove_all_bounds!])
+
+    for linecode in keys(eng["linecode"])
+
+        mat_rs = eng["linecode"][linecode]["rs"].*1000
+        mat_xs = eng["linecode"][linecode]["xs"].*1000
+
+        wires = size(mat_rs)[1]
+
+        true_vec = wires == 4 ? [mat_rs[1,1], mat_rs[2,2], mat_rs[3,3], mat_rs[4,4], mat_xs[1,1], mat_xs[2,2], mat_xs[3,3], mat_xs[4,4],
+                                    mat_xs[1,2], mat_xs[1,3], mat_xs[1,4], mat_xs[2,3], mat_xs[2,3], mat_xs[3,4]] : [mat_rs[1,1], mat_rs[2,2], mat_xs[1,1], mat_xs[2,2], mat_xs[1,2]]
+
+        folders = [f for f in readdir(general_result_path) if occursin(case, f)]
+
+        count_plot = 0
+        for folder in folders 
+            if isdir(joinpath(general_result_path, folder))
+                for file in readdir(joinpath(general_result_path, folder))
+                    if occursin("linecode_results", file) && occursin("power_mult_$(power_mult)", file)
+                        df = CSV.read(joinpath(general_result_path, folder, file), _DF.DataFrame, ntasks = 1)
+                        if linecode ∈ df.linecode_name
+                            x_est = filter(x->x.linecode_name.==linecode, df).x_est[1][2:end-2]
+                            r_est = filter(x->x.linecode_name.==linecode, df).r_est[1][2:end-2]
+                            x_est = replace(x_est, ";" => "")
+                            r_est = replace(r_est, ";" => "")
+                            xs = parse.(Float64, split(x_est, " "))
+                            rs = parse.(Float64, split(r_est, " "))
+                            xs = reshape(xs, (wires,wires))
+                            rs = reshape(rs, (wires,wires))
+                            if wires == 4
+                                est_vec = [rs[1,1], rs[2,2], rs[3,3], rs[4,4], xs[1,1], xs[2,2], xs[3,3], xs[4,4], xs[1,2], xs[1,3], xs[1,4], xs[2,3], xs[2,3], xs[3,4]]
+                                xticks=((1:14), ["r_aa", "r_bb", "r_cc", "r_nn", "x_aa", "x_bb", "x_cc", "x_nn", "x_ab", "x_ac", "x_an", "x_bc", "x_bn", "x_cn"])
+                                if count_plot > 0
+                                    _SP.scatter!(Vector(1:14), (est_vec-true_vec)./true_vec.*100, label = "$folder")
+                                else
+                                    _SP.scatter(Vector(1:14), (est_vec-true_vec)./true_vec.*100, ylabel = "Diff. (est- true)/true × 100", xticks = xticks, label = "$folder")
+                                end
+                            else
+                                xticks=((1:5), ["r_pp", "r_nn", "x_pp", "x_nn", "x_pn"])
+                                est_vec = [rs[1], rs[4], xs[1], xs[4], xs[2]]
+                                if count_plot > 0
+                                    _SP.scatter!(Vector(1:5), (est_vec-true_vec)./true_vec.*100, label = "$folder")
+                                else
+                                    _SP.scatter(Vector(1:5), (est_vec-true_vec)./true_vec.*100, ylabel = "Diff. (est- true)/true × 100", xticks = xticks, label = "$folder")
+                                end
+                            end
+                            count_plot+=1
+                        end
+                    end
+                end
+            end
+        end
+        if count_plot > 0
+            _SP.savefig(joinpath(general_result_path, "linecode_$(split(linecode, "/")[1])_results_case_$(case)_power_mult_$(power_mult)_perc.png"))
+        end
+    end
+end
+
+function rx_linecode_matrix_exact(linecode_name::String, feeder_id::String; whatt::String="rs")
+
+    eng = _PMD.parse_file(_IMP.NTW_DATA_DIR*"/"*feeder_id*"/Master_oh.dss", data_model = _PMD.ENGINEERING, transformations=[_PMD.transform_loops!,_PMD.remove_all_bounds!])
+    linecode = [key for key in keys(eng["linecode"]) if occursin(linecode_name, key)][1]
+    mat = eng["linecode"][linecode][whatt].*1000
 
     p = _SP.heatmap(zeros( size(mat)[1], size(mat)[1]),
                c = _SP.cgrad([:blue,:white,:red]),
@@ -93,6 +217,7 @@ function rx_linecode_matrix_exact(linecode_name::String; whatt::String="rs")
                xticks = ([], []), yticks = ([], []), xaxis = false, yaxis=false, 
                xlims=(-0.01, 4.01), ylims=(-0.01, 4.01),
                aspect_ratio = 1/1.5 )
+
     if size(mat)[1] == 4
         _SP.vline!([1,2,3], color=:lightgrey, linestyle = :dashdotdot)
         _SP.hline!([1,2,3], color=:lightgrey, linestyle = :dashdotdot)
@@ -124,6 +249,8 @@ function rx_linecode_matrix_exact(linecode_name::String; whatt::String="rs")
             count_row+=1
         end
     end    
+
+    _SP.annotate!(2, 4, _SP.text("real values", :black, :center, 10))
 
     return p
 end

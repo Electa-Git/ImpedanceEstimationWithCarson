@@ -34,7 +34,7 @@ for folder in readdir(general_result_path)
 end
 
 ########################################################################
-#### PLOTS POWER FLOW VALIDATION
+#### PLOTS POWER FLOW VALIDATION - case by case
 ########################################################################
 
 for folder in readdir(general_result_path)
@@ -50,18 +50,66 @@ for folder in readdir(general_result_path)
 end
 
 ########################################################################
-#### PLOTS CUMULATIVE IMPEDANCES
+#### PLOTS POWER FLOW VALIDATION - crossconstraint
+########################################################################
+
+# TODO
+
+########################################################################
+#### PLOTS CUMULATIVE IMPEDANCES PER USER
 ########################################################################
 
 for folder in readdir(general_result_path)
-    if any([occursin("imp_est_scenario_1__power_mult_$(pm)_.json", i) for i in readdir(joinpath(general_result_path, folder))])
-        case = [i for i in readdir(joinpath(general_result_path, folder)) if occursin("imp_true_scenario_1__power_mult_$(pm)_.json", i)][1][1:7]
-        true_impedance_dict = JSON.parsefile(joinpath(general_result_path, folder, [i for i in readdir(joinpath(general_result_path, folder)) if occursin("imp_true_scenario_1__power_mult_", i)][1]))
-        est_impedance_path = joinpath(general_result_path, folder)
-        for whatt ∈ ["Xc", "Rc", "Zc"]
-            p =  cumulative_zrx_per_user_boxplot(true_impedance_dict, est_impedance_path, case; whatt=whatt)
-            _SP.savefig((joinpath(general_result_path, folder))*"/cumulative_$(whatt)_diff_mult.png")
+    if isdir(joinpath(general_result_path, folder))
+        if any([occursin("imp_est_scenario_1__power_mult_", i) for i in readdir(joinpath(general_result_path, folder))])
+            case = [i for i in readdir(joinpath(general_result_path, folder)) if occursin("imp_true_scenario_1__power_mult_", i)][1][1:7]
+            true_impedance_dict = JSON.parsefile(joinpath(general_result_path, folder, [i for i in readdir(joinpath(general_result_path, folder)) if occursin("imp_true_scenario_1__power_mult_", i)][1]))
+            est_impedance_path = joinpath(general_result_path, folder)
+            for whatt ∈ ["Xc", "Rc", "Zc"]
+                p =  cumulative_zrx_per_user(true_impedance_dict, est_impedance_path, case; whatt=whatt)
+                _SP.savefig((joinpath(general_result_path, folder))*"/cumulative_$(whatt)_diff_mult.png")
+            end
         end
+    end
+end
+
+########################################################################
+#### PLOTS CUMULATIVE IMPEDANCES BOXPLOT - across power multipliers
+########################################################################
+
+for folder in readdir(general_result_path)
+    if isdir(joinpath(general_result_path, folder))
+        if any([occursin("imp_est_scenario_1__power_mult_", i) for i in readdir(joinpath(general_result_path, folder))])
+            case = [i for i in readdir(joinpath(general_result_path, folder)) if occursin("imp_true_scenario_1__power_mult_", i)][1][1:7]
+            true_impedance_dict = JSON.parsefile(joinpath(general_result_path, folder, [i for i in readdir(joinpath(general_result_path, folder)) if occursin("imp_true_scenario_1__power_mult_", i)][1]))
+            est_impedance_path = joinpath(general_result_path, folder)
+            for whatt ∈ ["Xc", "Rc", "Zc"]
+                p =  cumulative_zrx_boxplot(true_impedance_dict, est_impedance_path, case; whatt=whatt)
+                _SP.savefig((joinpath(general_result_path, folder))*"/cumulative_$(whatt)_diff_mult_boxplot.png")
+            end
+        end
+    end
+end
+
+########################################################################
+#### PLOTS CUMULATIVE IMPEDANCES BOXPLOT - across constraint sets
+########################################################################
+
+case = "30l_ug"
+for whatt in ["Zc", "Rc", "Xc"]
+    for power_mult in [1.0, 2.0, 3.0]
+        for folder in readdir(general_result_path)
+            if isdir(joinpath(general_result_path, folder))
+                if occursin(case, folder) && any([occursin("imp_est_scenario_1__power_mult_$(power_mult)", i) for i in readdir(joinpath(general_result_path, folder))])
+                    true_impedance_dict = JSON.parsefile(joinpath(general_result_path, folder, [i for i in readdir(joinpath(general_result_path, folder)) if occursin("imp_true_scenario_1__power_mult_", i)][1]))
+                    # est_impedance_path = joinpath(general_result_path, folder)
+                    for whatt ∈ ["Xc", "Rc", "Zc"]
+                        p =  cumulative_zrx_boxplot_crossconstraint(general_result_path, case, power_mult; whatt=whatt)
+                    end
+                end
+            end
+        end
+    _SP.savefig(general_result_path*"/cumulative_$(whatt)_diff_boxplot_constr_pm_$power_mult.png")
     end
 end
 
@@ -69,3 +117,9 @@ end
 #### PLOT LINECODE DIFFERENCES
 ########################################################################
 
+case = "30l_ug"
+feeder_id = "30load-feeder"
+power_mult = 3.0
+rx_linecode_matrix_estimated_crossconstraint(general_result_path, case, feeder_id, power_mult)
+
+rx_linecode_matrix_estimated_crossconstraint_perc(general_result_path, case, feeder_id, power_mult)

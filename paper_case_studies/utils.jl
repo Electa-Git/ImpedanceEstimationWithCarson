@@ -196,7 +196,6 @@ function add_material_properties_for_oh_ground_eulvtf!(mn_data, eng, buses_with_
     return mn_data
 end
 
-build_linecode_for_oh_ground_eulvtf
 function build_linecode_for_oh_ground_eulvtf(data, eng, z_pu) # assigns the set of linecodes we elected for this case and builds R,X
     
     for (b, branch) in data["branch"]
