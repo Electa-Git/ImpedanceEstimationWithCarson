@@ -11,6 +11,7 @@ function constraint_mc_residual(pm::_PMD.AbstractUnbalancedPowerModel, i::Int; n
     dst = _PMD.ref(pm, nw, :meas, i, "dst")
     rsc = _PMD.ref(pm, 1, :settings)["rescaler"]
     cmp =  _PMD.ref(pm, nw, :meas, i, "cmp")
+    crit = _PMD.ref(pm, nw, :meas, i, "crit")
 
     if _PMD.ref(pm, nw, :meas, i, "var") == :l
         conns = [1]
@@ -30,13 +31,18 @@ function constraint_mc_residual(pm::_PMD.AbstractUnbalancedPowerModel, i::Int; n
 
             vr_p = _PMD.var(pm, nw, :vr, bus_id)[c]
             vi_p = _PMD.var(pm, nw, :vi, bus_id)[c]
-            
-            JuMP.@constraint(pm.model,
-                res[idx] * rsc * σ >=   ((vr_p-vr_n)^2+(vi_p-vi_n)^2 - μ^2) 
+            if crit == "rwlav"
+                JuMP.@constraint(pm.model,
+                    res[idx] * rsc * σ >=   ((vr_p-vr_n)^2+(vi_p-vi_n)^2 - μ^2) 
+                )
+                JuMP.@constraint(pm.model,
+                    res[idx] * rsc * σ >= - ((vr_p-vr_n)^2+(vi_p-vi_n)^2 - μ^2)
+                )
+            else #wls
+                JuMP.@constraint(pm.model,
+                res[idx] * rsc^2 * σ^2 ==  ((vr_p-vr_n)^2+(vi_p-vi_n)^2 - μ^2)^2 
             )
-            JuMP.@constraint(pm.model,
-                res[idx] * rsc * σ >= - ((vr_p-vr_n)^2+(vi_p-vi_n)^2 - μ^2)
-            )
+            end
         
         elseif _PMD.ref(pm, nw, :meas, i, "var") ∈ [:pg, :pd, :qg, :qd]
             
@@ -48,30 +54,41 @@ function constraint_mc_residual(pm::_PMD.AbstractUnbalancedPowerModel, i::Int; n
             vi_p = _PMD.var(pm, nw, :vi, bus_id)[c]
 
             if _PMD.ref(pm, nw, :meas, i, "var") ∈ [:pg, :pd] 
-                JuMP.@constraint(pm.model,
-                    res[idx] * rsc * σ >=   ( (vr_p - vr_n)*cr+(vi_p-vi_n)*ci - μ) 
-                )
-                JuMP.@constraint(pm.model,
-                    res[idx] * rsc * σ >= - ( (vr_p - vr_n)*cr+(vi_p-vi_n)*ci - μ)
-                )
+                if crit == "rwlav"
+                    JuMP.@constraint(pm.model,
+                        res[idx] * rsc * σ >=   ( (vr_p - vr_n)*cr+(vi_p-vi_n)*ci - μ) 
+                    )
+                    JuMP.@constraint(pm.model,
+                        res[idx] * rsc * σ >= - ( (vr_p - vr_n)*cr+(vi_p-vi_n)*ci - μ)
+                    )
+                else #wls
+                    JuMP.@constraint( pm.model, res[idx] * rsc^2 * σ^2 == ( (vr_p - vr_n)*cr+(vi_p-vi_n)*ci - μ )^2 )
+                end
             else
-                JuMP.@constraint(pm.model,
-                    res[idx] * rsc * σ >=   ( -(vr_p-vr_n)*ci+(vi_p-vi_n)*cr - μ) 
-                )
-                JuMP.@constraint(pm.model,
-                    res[idx] * rsc * σ >= - ( -(vr_p-vr_n)*ci+(vi_p-vi_n)*cr - μ)
-                )
+                if crit == "rwlav"
+                    JuMP.@constraint(pm.model,
+                        res[idx] * rsc * σ >=   ( -(vr_p-vr_n)*ci+(vi_p-vi_n)*cr - μ) 
+                    )
+                    JuMP.@constraint(pm.model,
+                        res[idx] * rsc * σ >= - ( -(vr_p-vr_n)*ci+(vi_p-vi_n)*cr - μ)
+                    )
+                else # wls
+                    JuMP.@constraint(pm.model, res[idx] * rsc^2 * σ^2 == ( -(vr_p-vr_n)*ci+(vi_p-vi_n)*cr - μ)^2 )
+                end
             end
-        elseif _PMD.ref(pm, nw, :meas, i, "var") == :l
-
-                μ, σ = (_DST.mean(dst), _DST.std(dst))
-
+        elseif _PMD.ref(pm, nw, :meas, i, "var") == :l 
+            μ, σ = (_DST.mean(dst), _DST.std(dst))
+            if crit == "rwlav"
                 JuMP.@constraint(pm.model,
                     res[idx] * σ >=   (_PMD.var(pm, nw, :l, _PMD.ref(pm, nw, :meas, i, "cmp_id")) - μ) 
                 )
                 JuMP.@constraint(pm.model,
                     res[idx] * σ >= - (_PMD.var(pm, nw, :l, _PMD.ref(pm, nw, :meas, i, "cmp_id"))- μ)
                 )
+            else #wls
+                JuMP.@constraint(pm.model,
+                res[idx] * σ^2 == (_PMD.var(pm, nw, :l, _PMD.ref(pm, nw, :meas, i, "cmp_id"))- μ)^2 )
+            end
         else
             @error "Sorry, measurement $(_PMD.ref(pm, nw, :meas, i, "var")) not supported (yet)."
         end
