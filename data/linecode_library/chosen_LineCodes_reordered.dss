@@ -1,0 +1,56 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!       4-wire aluminium underground       !!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+New LineSpacing.UGLV_240Al_XLPE/NYL/PVC_UG_4w_spacing nconds=4 nphases=3 x=[0, 26.799999999999997, 0, 26.799999999999997]  h=[1026.8, 1026.8, 1000, 1000]  units=mm ! [A, B, C, N]
+New Wiredata.UGLV_240Al_XLPE/NYL/PVC DIAM=18.4 RAC=0.162 NormAmps=400 Runits=km radunits=mm  !RAC*A = 43.076513156374084
+
+New LineSpacing.UGLV_185Al_XLPE/NYL/PVC_UG_4w_spacing nconds=4 nphases=3 x=[0, 24.6, 0, 24.6]  h=[1024.6, 1024.6, 1000, 1000]  units=mm ! [A, B, C, N]
+New Wiredata.UGLV_185Al_XLPE/NYL/PVC DIAM=16.6 RAC=0.211 NormAmps=400 Runits=km radunits=mm  !RAC*A = 45.66553107812399
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!       2-wire aluminium underground       !!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+New LineSpacing.UGLV_185Al_XLPE/NYL/PVC_UG_2w_spacing nconds=2 nphases=1 x=[-24.6, 0]  h=[1000, 1000]  units=mm ! [P, N]
+New Wiredata.UGLV_185Al_XLPE/NYL/PVC DIAM=16.6 RAC=0.211 NormAmps=400 Runits=km radunits=mm  !RAC*A = 45.66553107812399
+
+New LineSpacing.UGSC_16Al_XLPE/PVC_UG_2w_spacing nconds=2 nphases=1 x=[-9.0, 0]  h=[1000, 1000]  units=mm ! [P, N]
+New Wiredata.UGSC_16Al_XLPE/PVC DIAM=4.8 RAC=2.44 NormAmps=400 Runits=km radunits=mm    ! RAC*A = 44.15319979061239
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!          4-wire copper underground          !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+New LineSpacing.UGLV_120Cu_XLPE/NYL/PVC_UG_4w_spacing nconds=4 nphases=3 x=[0, 20.4, 0, 20.4]  h=[1020.4, 1020.4, 1000, 1000]  units=mm ! [A, B, C, N]
+New Wiredata.UGLV_120Cu_XLPE/NYL/PVC DIAM=13.4 RAC=0.197 NormAmps=400 Runits=km radunits=mm ! RAC*A = 27.782140561270225
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!        2-wire copper underground        !!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+New LineSpacing.UGSC_16Cu_XLPE/NYL/PVC_UG_2w_spacing nconds=2 nphases=1 x=[-10.6, 0]  h=[1000, 1000]  units=mm ! [P, N]
+New Wiredata.UGSC_16Cu_XLPE/PVC DIAM=4.8 RAC=1.47 NormAmps=400 Runits=km radunits=mm    ! RAC*A = 26.600493316475497
+
+New LineSpacing.UGSC_25Cu_XLPE/NYL/PVC_UG_2w_spacing nconds=2 nphases=1 x=[-12.2, 0]  h=[1000, 1000]  units=mm ! [P, N]
+New Wiredata.UGSC_25Cu_XLPE/NYL/PVC DIAM=6.0 RAC=0.927 NormAmps=400 Runits=km radunits=mm  ! RAC*A = 26.210307508899646
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!          4-wire overhead lines           !!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+New LineSpacing.LV_OH_4wire_PLUTO nconds=4 nphases=3 x=[0, 650, 1550, 2200]  h=[5800, 5800, 5800, 5800]  units=mm ! [A, B, C, N]
+New Wiredata.PLUTO DIAM=18.8 RAC=0.168 NormAmps=437 Runits=km radunits=mm ! RAC*A = 46.63530931436062
+
+New LineSpacing.LV_OH_4wire_HYDROGEN nconds=4 nphases=3 x=[0, 650, 1550, 2200]  h=[5800, 5800, 5800, 5800]  units=mm ! [A, B, C, N]
+New Wiredata.HYDROGEN DIAM=13.5 RAC=0.168 NormAmps=437 Runits=km radunits=mm ! RAC*A = 24.047320966903072
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!          2-wire overhead lines           !!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+New LineSpacing.ABC2x16_OH_2w_spacing nconds=2 nphases=1 x=[-7.5, 0]  h=[5800, 5800]  units=mm ! [P, N]
+New Wiredata.ABC2x16 DIAM=4.9 RAC=2.372 NormAmps=78 Runits=km radunits=mm    ! RAC*A = 44.72977629032573
+
+New LineSpacing.TW2X16_OH_2w_spacing nconds=2 nphases=1 x=[-7.01, 0]  h=[5800, 5800]  units=mm ! [P, N]
+New Wiredata.TW2X16 DIAM=4.41 RAC=2.372 NormAmps=437 Runits=km radunits=mm    ! RAC*A = 36.23111879516384
