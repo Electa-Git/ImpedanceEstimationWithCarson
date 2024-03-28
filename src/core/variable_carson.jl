@@ -1,6 +1,6 @@
 """
-Carson's equations give impedance in Ω/km. This multiplies to get the Ω.
-SO expect the result to be in km!!
+Carson's equations give nominal impedances in Ω/km. This variable multiplies them to get the Ω (in per unit though).
+So the value of this variable is in km!!
 """
 function variable_segment_length(pm::_PMD.AbstractExplicitNeutralIVRModel; bounded::Bool = true, report::Bool=true)
 
@@ -27,8 +27,7 @@ function variable_segment_length(pm::_PMD.AbstractExplicitNeutralIVRModel; bound
     report && _IM.sol_component_value(pm, :pmd, nw, :branch, :l, rprt_ids, l)
 end
 """
-Only one variable per conductor per linecode
-NB: currently the upper lower bounds are slightly larger than the max cross section in the library, and slightly smaller than the min.
+One variable per conductor per linecode, unless cross-sections are assumed to be equal.
 """
 function variable_cross_section_and_gmr(pm::_PMD.AbstractExplicitNeutralIVRModel, μ; bounded::Bool = true, report::Bool=true)
 
@@ -40,92 +39,18 @@ function variable_cross_section_and_gmr(pm::_PMD.AbstractExplicitNeutralIVRModel
     oh_or_ug = if equal_crossection _PMD.ref(pm, 1, :settings)["oh_or_ug"] end
 
     if !equal_crossection
-        A_p = _PMD.var(pm, nw)[:A_p] = Dict(i => JuMP.@variable(pm.model,
-                    [t in conn[i]],
-                    base_name="A_p_$(i)",
-                    lower_bound = 10, 
-                    upper_bound = 300, 
-                    start = _PMD.comp_start_value(linecode, "A_p_start", t, 20.) 
-                    ) for (i, linecode) in _PMD.ref(pm, 1, :linecode_map) 
-                ) 
-
-        gmr = _PMD.var(pm, nw)[:gmr] = Dict(i => JuMP.@variable(pm.model,
-            [t in conn[i]],
-            base_name="gmr_$(i)",
-            lower_bound = 1., 
-            upper_bound = 9., 
-            start = _PMD.comp_start_value(linecode, "gmr_start", t, 1.965) 
-            ) for (i, linecode) in _PMD.ref(pm, 1, :linecode_map) 
-        ) 
+        A_p, gmr = variable_different_cross_sections(pm, conn)
     else
         if oh_or_ug == "oh" # overhead lines have same crosss. for all conductors
-            
-            A_all = Dict(i => JuMP.@variable(pm.model,
-                              base_name="A_ph_$(i)",
-                              lower_bound = 12, 
-                              upper_bound = 300,
-                              start = _PMD.comp_start_value(linecode, "A_p_start", 10.)
-                              )
-                            for (i, linecode) in _PMD.ref(pm, 1, :linecode_map) 
-                        )
-
-            A_p = _PMD.var(pm, nw)[:A_p] = Dict(i => [A_all[i] for j in conn[i]] for (i, linecode) in _PMD.ref(pm, 1, :linecode_map) ) 
-
-            gmr_all = Dict(i => JuMP.@variable(pm.model,
-                            base_name="gmr_ph_$(i)",
-                            lower_bound = 1., 
-                            upper_bound = 9., 
-                            start = _PMD.comp_start_value(linecode, "gmr_start", 1.965)
-                            )
-                            for (i, linecode) in _PMD.ref(pm, 1, :linecode_map)
-                        )
-
-            gmr = _PMD.var(pm, nw)[:gmr] = Dict(i => [gmr_all[i] for j in conn[i]] for (i, linecode) in _PMD.ref(pm, 1, :linecode_map) )
+            A_p, gmr = variable_all_cross_sections_equal(pm, conn)
         else # underground cables have same crosss. for all phase cond, neutral can be up to 50% smaller tho
-
-            A_ph = Dict(i => JuMP.@variable(pm.model,
-                              base_name="A_ph_$(i)",
-                              lower_bound = 12, 
-                              upper_bound = 300,
-                              start = _PMD.comp_start_value(linecode, "A_p_start", 10.)
-                              )
-                            for (i, linecode) in _PMD.ref(pm, 1, :linecode_map) 
-                        )
-
-            A_n = Dict(i => JuMP.@variable(pm.model,
-                base_name="A_n_$(i)",
-                lower_bound = 6, 
-                upper_bound = 300,
-                start = _PMD.comp_start_value(linecode, "A_p_start", 10.)
-                )
-                for (i, linecode) in _PMD.ref(pm, 1, :linecode_map) 
-            )
-
-            A_p = _PMD.var(pm, nw)[:A_p] = Dict(i => vcat([A_ph[i] for j in conn[i][1:end-1]], A_n[i]) for (i, linecode) in _PMD.ref(pm, 1, :linecode_map) ) 
-
-            gmr_ph = Dict(i => JuMP.@variable(pm.model,
-                    base_name="gmr_ph_$(i)",
-                    lower_bound = 1., 
-                    upper_bound = 9., 
-                    start = _PMD.comp_start_value(linecode, "gmr_start", 1.965)
-                    )
-                    for (i, linecode) in _PMD.ref(pm, 1, :linecode_map) 
-                        ) 
-
-            gmr_n = Dict(i => JuMP.@variable(pm.model,
-                    base_name="gmr_n_$(i)",
-                    lower_bound = .5, 
-                    upper_bound = 9., 
-                    start = _PMD.comp_start_value(linecode, "gmr_start", 1.965)
-                ) for (i, linecode) in _PMD.ref(pm, 1, :linecode_map) ) 
-
-            gmr = _PMD.var(pm, nw)[:gmr] = Dict(i => vcat([gmr_ph[i] for j in conn[i][1:end-1]], gmr_n[i]) for (i, linecode) in _PMD.ref(pm, 1, :linecode_map) ) 
+            A_p, gmr = variable_phase_cross_sections_equal(pm, conn)
         end
     end
 
     if bounded
         for (i,linecode) in _PMD.ref(pm, 1, :linecode_map)
-            for idx in conn[i]
+            for idx in 1:length(A_p)
                 if haskey(linecode, "A_p_max")  JuMP.set_upper_bound(A_p[i][idx], linecode["A_p_max"][idx]) end
                 if haskey(linecode, "A_p_min")  JuMP.set_lower_bound(A_p[i][idx], linecode["A_p_min"][idx]) end
             end
@@ -143,6 +68,101 @@ function variable_cross_section_and_gmr(pm::_PMD.AbstractExplicitNeutralIVRModel
 
 end
 """
+For every line code, defines one variable for A_p and one for gmr for every conductor.
+Possible future work is to make this more generic and allow some linecodes to have this or not and some viceversa.
+"""
+function variable_different_cross_sections(pm::_PMD.AbstractExplicitNeutralIVRModel, conn::Dict)
+        A_p = _PMD.var(pm, nw)[:A_p] = Dict(i => JuMP.@variable(pm.model,
+                    [t in conn[i]],
+                    base_name="A_p_$(i)",
+                    lower_bound = 10, 
+                    upper_bound = 300, 
+                    start = _PMD.comp_start_value(linecode, "A_p_start", t, 20.) 
+                    ) for (i, linecode) in _PMD.ref(pm, 1, :linecode_map) 
+                ) 
+
+        gmr = _PMD.var(pm, nw)[:gmr] = Dict(i => JuMP.@variable(pm.model,
+            [t in conn[i]],
+            base_name="gmr_$(i)",
+            lower_bound = .7, 
+            upper_bound = 9., 
+            start = _PMD.comp_start_value(linecode, "gmr_start", t, 1.965) 
+            ) for (i, linecode) in _PMD.ref(pm, 1, :linecode_map) 
+        ) 
+    return A_p, gmr
+end
+"""
+All conductors have the same cross section. All means phase conductors as well as the neutral.
+"""
+function variable_all_cross_sections_equal(pm::_PMD.AbstractExplicitNeutralIVRModel, conn::Dict)
+    A_all = Dict(i => JuMP.@variable(pm.model,
+                        base_name="A_ph_$(i)",
+                        lower_bound = 12, 
+                        upper_bound = 300,
+                        start = _PMD.comp_start_value(linecode, "A_p_start", 10.)
+                        )
+                    for (i, linecode) in _PMD.ref(pm, 1, :linecode_map) 
+                )
+
+    A_p = _PMD.var(pm, nw)[:A_p] = Dict(i => [A_all[i] for j in conn[i]] for (i, linecode) in _PMD.ref(pm, 1, :linecode_map) ) 
+
+    gmr_all = Dict(i => JuMP.@variable(pm.model,
+                    base_name="gmr_ph_$(i)",
+                    lower_bound = .7, 
+                    upper_bound = 9., 
+                    start = _PMD.comp_start_value(linecode, "gmr_start", 1.965)
+                    )
+                    for (i, linecode) in _PMD.ref(pm, 1, :linecode_map)
+                )
+
+    gmr = _PMD.var(pm, nw)[:gmr] = Dict(i => [gmr_all[i] for j in conn[i]] for (i, linecode) in _PMD.ref(pm, 1, :linecode_map) )
+
+    return A_p, gmr
+end
+"""
+All phase conductors have the same cross section, but the neutral can be up to 50% smaller.
+"""
+function variable_phase_cross_sections_equal(pm::_PMD.AbstractExplicitNeutralIVRModel, conn::Dict)
+    A_ph = Dict(i => JuMP.@variable(pm.model,
+                      base_name="A_ph_$(i)",
+                      lower_bound = 12, 
+                      upper_bound = 300,
+                      start = _PMD.comp_start_value(linecode, "A_p_start", 10.)
+                      )
+                    for (i, linecode) in _PMD.ref(pm, 1, :linecode_map) 
+                )
+
+    A_n = Dict(i => JuMP.@variable(pm.model,
+        base_name="A_n_$(i)",
+        lower_bound = 6, 
+        upper_bound = 300,
+        start = _PMD.comp_start_value(linecode, "A_p_start", 10.)
+        )
+        for (i, linecode) in _PMD.ref(pm, 1, :linecode_map) 
+    )
+
+    A_p = _PMD.var(pm, nw)[:A_p] = Dict(i => vcat([A_ph[i] for j in conn[i][1:end-1]], A_n[i]) for (i, linecode) in _PMD.ref(pm, 1, :linecode_map) ) 
+
+    gmr_ph = Dict(i => JuMP.@variable(pm.model,
+            base_name="gmr_ph_$(i)",
+            lower_bound = .8, 
+            upper_bound = 9., 
+            start = _PMD.comp_start_value(linecode, "gmr_start", 1.965)
+            )
+            for (i, linecode) in _PMD.ref(pm, 1, :linecode_map) 
+                ) 
+
+    gmr_n = Dict(i => JuMP.@variable(pm.model,
+            base_name="gmr_n_$(i)",
+            lower_bound = .5, 
+            upper_bound = 9., 
+            start = _PMD.comp_start_value(linecode, "gmr_start", 1.965)
+        ) for (i, linecode) in _PMD.ref(pm, 1, :linecode_map) ) 
+
+    gmr = _PMD.var(pm, nw)[:gmr] = Dict(i => vcat([gmr_ph[i] for j in conn[i][1:end-1]], gmr_n[i]) for (i, linecode) in _PMD.ref(pm, 1, :linecode_map) ) 
+    return A_p, gmr
+end
+"""
 coordinates are in mm
 """
 function variable_coordinates_and_distances(pm::_PMD.AbstractExplicitNeutralIVRModel; bounded::Bool=true, report::Bool=true) 
@@ -157,7 +177,7 @@ function variable_coordinates_and_distances(pm::_PMD.AbstractExplicitNeutralIVRM
         [1:1], # making it a vector for consistency with the rest (access through indices later on)
         base_name="dij_2w_code_$i",
         lower_bound = 2, 
-        upper_bound = 2e3, 
+        upper_bound = 100, 
         ) for (i,l) in _PMD.ref(pm, 1, :linecode_map) if i ∈ two_w
     ) 
 
@@ -180,28 +200,31 @@ function variable_coordinates_and_distances(pm::_PMD.AbstractExplicitNeutralIVRM
         dij_4w = Dict(i => JuMP.@variable(pm.model,
                 [j = 1:3], # only three distances are needed! instead of 6
                 base_name="dij_4w_code_$(i)",
-                lower_bound = 1,
+                lower_bound = 380,
                 upper_bound = 1.2e3, # this is because the distances are  [(1,2), (2,3), (3,4)] so sum is never above 3meters
                 ) for (i,l) in _PMD.ref(pm, 1, :linecode_map) if i ∈ four_w
         )
 
     elseif exploit_squaredness
 
-        dij_4w = Dict(i => JuMP.@variable(pm.model,
-                [j = 1:4], # only three distances are needed! instead of 6
+        bigD = Dict(i => JuMP.@variable(pm.model,
+                [j = 1:1], 
                 base_name="dij_4w_code_$(i)",
-                lower_bound = 1,
-                upper_bound = 100, # tfor cables, more than 100 is impossible??
+                lower_bound = 10,
+                upper_bound = 60,
                 ) for (i,l) in _PMD.ref(pm, 1, :linecode_map) if i ∈ four_w
         )
-        for (i,l) in _PMD.ref(pm, 1, :linecode_map) 
-            if i ∈ four_w
-                JuMP.@constraint(pm.model, dij_4w[i][3]>=dij_4w[i][1])
-                JuMP.@constraint(pm.model, dij_4w[i][1]>=dij_4w[i][4])
-                JuMP.@constraint(pm.model, dij_4w[i][2]>=dij_4w[i][4])
-                JuMP.@constraint(pm.model, dij_4w[i][3]>=dij_4w[i][2])
-            end
-        end
+
+        smallD = Dict(i => JuMP.@variable(pm.model,
+                [j = 1:1], 
+                base_name="dij_4w_code_$(i)",
+                lower_bound = 10,
+                upper_bound = 40,
+                ) for (i,l) in _PMD.ref(pm, 1, :linecode_map) if i ∈ four_w
+        )
+
+        dij_4w = _PMD.var(pm, nw)[:dij_4w] = Dict(i => vcat(bigD[i], smallD[i]) for (i, linecode) in _PMD.ref(pm, 1, :linecode_map) if i ∈ four_w) 
+
     else
         
         xcoord = _PMD.var(pm, nw)[:xcoord] = Dict(i => JuMP.@variable(pm.model,
@@ -233,7 +256,7 @@ function variable_coordinates_and_distances(pm::_PMD.AbstractExplicitNeutralIVRM
             [j = 1:6],
             base_name="dij_4w_code_$(i)",
             lower_bound = 1,
-            upper_bound =  4e3, 
+            upper_bound =  3e3, 
             ) for (i,l) in _PMD.ref(pm, 1, :linecode_map) if i ∈ four_w
         )
 
@@ -269,7 +292,7 @@ function variable_coordinates_and_distances(pm::_PMD.AbstractExplicitNeutralIVRM
                 end
                 if i ∈ vcat(four_w)
                     @info "Please mind the `distance_indices` if you add bounds on the dij's"
-                    for idx in 1:6
+                    for idx in 1:4
                         if haskey(linecode, "dij_4w_max") JuMP.set_upper_bound(dij_4w[i][idx], linecode["dij_4w_max"][idx]) end
                         if haskey(linecode, "dij_4w_min") JuMP.set_lower_bound(dij_4w[i][idx], linecode["dij_4w_min"][idx]) end     
                     end
@@ -354,16 +377,15 @@ end
 
 function variable_carson_series(pm)
 
-    variable_segment_length(pm) # branch length is always in the variable set regardless (one length per each branch)
-    variable_coordinates_and_distances(pm) # do not depend on any material property
-
-    # ↓ temperature and material properties that might be variable or not
-    # TODO: build a separate one per linecode  instead of assuming all same material
+    # ↓ temperature and material are fixed
     μ = haskey(_PMD.ref(pm, 1, :settings), "mu_rel") ? _PMD.ref(pm, 1, :settings)["mu_rel"] : variable_mu_rel(pm)
     if μ isa Real @info "μ is being fixed" end
 
     # ↓ variables that depend on material properties
     variable_cross_section_and_gmr(pm, μ)
+
+    variable_segment_length(pm) # branch length is always in the variable set regardless (one length per each branch)
+    variable_coordinates_and_distances(pm) # do not depend on any material property
 
 end
 
