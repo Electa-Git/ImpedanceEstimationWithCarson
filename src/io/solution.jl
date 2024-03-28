@@ -58,15 +58,17 @@ function build_rx_sol_dict(mn_data::Dict, sol::Dict)
                     end                        
                     x[c[1], c[2]] = x[c[2], c[1]] = 0.062832 * (c₂ + log(1) - log( c₁*dist_expr ))
                 elseif exploit_squaredness
-                    if idx ∈ [1, 2] 
+
+                    if idx ∈ [1, 2]
                         dist_expr = Dij[1]
-                    elseif idx ∈ [5, 6] 
-                        dist_expr = Dij[4]
                     elseif idx == 3
-                        dist_expr = Dij[3]
+                        dist_expr = Dij[1]*sqrt(2)
                     elseif idx == 4
-                        dist_expr = Dij[2]
+                        dist_expr = Dij[1]/sqrt(2)+Dij[2]
+                    elseif idx ∈ [5, 6]
+                        dist_expr = sqrt( Dij[2]^2+Dij[1]^2/2 )
                     end
+
                     x[c[1], c[2]] = x[c[2], c[1]] = 0.062832 * (c₂ + log(1) - log( c₁*dist_expr ))
                 end
             end
