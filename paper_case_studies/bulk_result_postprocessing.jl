@@ -1,4 +1,4 @@
-general_result_path = raw"C:\Users\mvanin\OneDrive - KU Leuven\Desktop\repos\DataDrivenImpedanceEstimationWithCarson\paper_results"
+general_result_path = raw"C:\Users\mvanin\OneDrive - KU Leuven\Desktop\repos\DataDrivenImpedanceEstimationWithCarson\paper_results/noiseless"
 validation_timesteps = find_most_loaded_timesteps(profiles, 400)[201:end]
 pf_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 100., "print_level"=>0 )
 profiles = CSV.read(_IMP.DATA_DIR*"/nrel_profiles.csv", _DF.DataFrame, ntasks = 1)
@@ -96,22 +96,22 @@ end
 ########################################################################
 
 case = "30l_ug"
-for whatt in ["Zc", "Rc", "Xc"]
-    for power_mult in [1.0, 2.0, 3.0]
-        for folder in readdir(general_result_path)
-            if isdir(joinpath(general_result_path, folder))
-                if occursin(case, folder) && any([occursin("imp_est_scenario_1__power_mult_$(power_mult)", i) for i in readdir(joinpath(general_result_path, folder))])
-                    true_impedance_dict = JSON.parsefile(joinpath(general_result_path, folder, [i for i in readdir(joinpath(general_result_path, folder)) if occursin("imp_true_scenario_1__power_mult_", i)][1]))
-                    # est_impedance_path = joinpath(general_result_path, folder)
-                    for whatt ∈ ["Xc", "Rc", "Zc"]
-                        p =  cumulative_zrx_boxplot_crossconstraint(general_result_path, case, power_mult; whatt=whatt)
-                    end
+
+for power_mult in [1.0, 2.0, 3.0]
+    for folder in [i for i in readdir(general_result_path) ]#if !occursin("no_restriction", i)] 
+        if isdir(joinpath(general_result_path, folder))
+            if occursin(case, folder) && any([occursin("imp_est_scenario_1__power_mult_$(power_mult)", i) for i in readdir(joinpath(general_result_path, folder))])
+                true_impedance_dict = JSON.parsefile(joinpath(general_result_path, folder, [i for i in readdir(joinpath(general_result_path, folder)) if occursin("imp_true_scenario_1__power_mult_", i)][1]))
+                # est_impedance_path = joinpath(general_result_path, folder)
+                for whatt in ["Xc", "Rc", "Zc"]
+                    p =  cumulative_zrx_boxplot_crossconstraint(general_result_path, case, power_mult; whatt=whatt)
+                    _SP.savefig(general_result_path*"/cumulative_$(whatt)_diff_boxplot_constr_pm_$power_mult.png")
                 end
             end
         end
-    _SP.savefig(general_result_path*"/cumulative_$(whatt)_diff_boxplot_constr_pm_$power_mult.png")
     end
 end
+
 
 ########################################################################
 #### PLOT LINECODE DIFFERENCES

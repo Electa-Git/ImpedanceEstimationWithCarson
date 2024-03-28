@@ -11,10 +11,10 @@ ie_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 18
 profiles = CSV.read(_IMP.DATA_DIR*"/nrel_profiles.csv", _DF.DataFrame, ntasks = 1)
 pf_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 200., "print_level"=>0 )
 
-timestep_set = find_most_loaded_timesteps(profiles, 200)
+timestep_set = find_most_loaded_timesteps(profiles, 200)[1:50]
 
-for power_mult in [1.,2., 3.,]
-    run_impedance_estimation_oh_ground_30_load_case(raw"C:\Users\mvanin\OneDrive - KU Leuven\Desktop\repos\DataDrivenImpedanceEstimationWithCarson\paper_results/", ie_solver, pf_solver, profiles, timestep_set, add_meas_noise = true, length_bounds_percval=0.3, power_mult=power_mult, exploit_horizontality = true, exploit_equal_crossection = true)
+for power_mult in [3.]#[1.,2., 3.,]
+    run_impedance_estimation_oh_ground_30_load_case(raw"C:\Users\mvanin\OneDrive - KU Leuven\Desktop\repos\DataDrivenImpedanceEstimationWithCarson\paper_results/noiseless", ie_solver, pf_solver, profiles, timestep_set, add_meas_noise = false, length_bounds_percval=0.3, power_mult=power_mult, exploit_horizontality = true, exploit_equal_crossection = true)
 end
 
 function run_impedance_estimation_oh_ground_30_load_case(result_path::String, ie_solver, pf_solver, profiles::_DF.DataFrame, timestep_set; scenario_id::Int = 1, add_meas_noise::Bool=true, power_mult::Float64=1., use_length_bounds::Bool=true, length_bounds_percval::Float64=0.10, shunt_resistive::Bool=true, exploit_equal_crossection::Bool=false, exploit_horizontality::Bool=false)    
@@ -47,7 +47,7 @@ function run_impedance_estimation_oh_ground_30_load_case(result_path::String, ie
     mn_data["nw"]["1"]["settings"]["exploit_horizontality"] = true
     mn_data["nw"]["1"]["settings"]["exploit_equal_crossection"] = true
     mn_data["nw"]["1"]["settings"]["exploit_squaredness"] = false
-    mn_data["nw"]["1"]["settings"]["oh_or_ug"] = "ug"
+    mn_data["nw"]["1"]["settings"]["oh_or_ug"] = "oh"
     mn_data["nw"]["1"]["settings"]["rescaler"] = 100.
     mn_data["nw"]["1"]["settings"]["mu_rel"] = 1.
     mn_data["nw"]["1"]["temperature"] = Dict()
@@ -73,7 +73,7 @@ function run_impedance_estimation_oh_ground_30_load_case(result_path::String, ie
     mn_data["nw"]["1"]["settings"]["exploit_horizontality"] = false 
     mn_data["nw"]["1"]["settings"]["exploit_equal_crossection"] = true
     mn_data["nw"]["1"]["settings"]["exploit_squaredness"] = false
-    mn_data["nw"]["1"]["settings"]["oh_or_ug"] = "ug"
+    mn_data["nw"]["1"]["settings"]["oh_or_ug"] = "oh"
     mn_data["nw"]["1"]["settings"]["rescaler"] = 100.
     mn_data["nw"]["1"]["settings"]["mu_rel"] = 1.
     mn_data["nw"]["1"]["temperature"] = Dict()
@@ -99,7 +99,7 @@ function run_impedance_estimation_oh_ground_30_load_case(result_path::String, ie
     mn_data["nw"]["1"]["settings"]["exploit_horizontality"] = true
     mn_data["nw"]["1"]["settings"]["exploit_equal_crossection"] = false
     mn_data["nw"]["1"]["settings"]["exploit_squaredness"] = false
-    mn_data["nw"]["1"]["settings"]["oh_or_ug"] = "ug"
+    mn_data["nw"]["1"]["settings"]["oh_or_ug"] = "oh"
     mn_data["nw"]["1"]["settings"]["rescaler"] = 100.
     mn_data["nw"]["1"]["settings"]["mu_rel"] = 1.
     mn_data["nw"]["1"]["temperature"] = Dict()
@@ -125,7 +125,7 @@ function run_impedance_estimation_oh_ground_30_load_case(result_path::String, ie
     mn_data["nw"]["1"]["settings"]["exploit_horizontality"] = false 
     mn_data["nw"]["1"]["settings"]["exploit_equal_crossection"] = false
     mn_data["nw"]["1"]["settings"]["exploit_squaredness"] = false
-    mn_data["nw"]["1"]["settings"]["oh_or_ug"] = "ug"
+    mn_data["nw"]["1"]["settings"]["oh_or_ug"] = "oh"
     mn_data["nw"]["1"]["settings"]["rescaler"] = 100.
     mn_data["nw"]["1"]["settings"]["mu_rel"] = 1.
     mn_data["nw"]["1"]["temperature"] = Dict()

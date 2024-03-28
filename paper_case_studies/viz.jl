@@ -110,7 +110,7 @@ function rx_linecode_matrix_estimated_crossconstraint(general_result_path::Strin
 
         if wires == 4
             _SP.scatter([1:14], [mat_rs[1,1], mat_rs[2,2], mat_rs[3,3], mat_rs[4,4], mat_xs[1,1], mat_xs[2,2], mat_xs[3,3], mat_xs[4,4],
-                                    mat_xs[1,2], mat_xs[1,3], mat_xs[1,4], mat_xs[2,3], mat_xs[2,3], mat_xs[3,4]], 
+                                    mat_xs[1,2], mat_xs[1,3], mat_xs[1,4], mat_xs[2,3], mat_xs[2,4], mat_xs[3,4]], 
                                     xticks=((1:14), ["r_aa", "r_bb", "r_cc", "r_nn", "x_aa", "x_bb", "x_cc", "x_nn", "x_ab", "x_ac", "x_an", "x_bc", "x_bn", "x_cn"]), label = "true")
         else
             _SP.scatter([1:5], [mat_rs[1,1], mat_rs[2,2], mat_xs[1,1], mat_xs[2,2], mat_xs[1,2]], xticks=((1:5), ["r_pp", "r_nn", "x_pp", "x_nn", "x_pn"]), label = "true")
@@ -132,7 +132,7 @@ function rx_linecode_matrix_estimated_crossconstraint(general_result_path::Strin
                             xs = reshape(xs, (wires,wires))
                             rs = reshape(rs, (wires,wires))
                             if wires == 4
-                                _SP.scatter!(Vector(1:14), [rs[1,1], rs[2,2], rs[3,3], rs[4,4], xs[1,1], xs[2,2], xs[3,3], xs[4,4], xs[1,2], xs[1,3], xs[1,4], xs[2,3], xs[2,3], xs[3,4]], label = "$folder")
+                                _SP.scatter!(Vector(1:14), [rs[1,1], rs[2,2], rs[3,3], rs[4,4], xs[1,1], xs[2,2], xs[3,3], xs[4,4], xs[1,2], xs[1,3], xs[1,4], xs[2,3], xs[2,4], xs[3,4]], label = "$folder")
                             else
                                 _SP.scatter!(Vector(1:5), [rs[1], rs[4], xs[1], xs[4], xs[2]], label = "$folder")
                             end
