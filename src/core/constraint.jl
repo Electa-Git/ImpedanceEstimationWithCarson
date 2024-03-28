@@ -255,14 +255,6 @@ function carson_impedance_expressions(pm::_PMD.AbstractExplicitNeutralIVRModel)
                                                 0.062832 * (c₂ + log(1) - log( c₁*dist_expr )))
                 elseif exploit_squaredness
 
-                    # if idx ∈ [1, 2, 5, 6]
-                    #     x[c[1], c[2]] = x[c[2], c[1]] = JuMP.@expression(pm.model, 
-                    #            0.062832 * (c₂ + log(1) - log( c₁*Dij[1] )))
-                    # else
-                    #     x[c[1], c[2]] = x[c[2], c[1]] = JuMP.@expression(pm.model, 
-                    #            0.062832 * (c₂ + log(1) - log( c₁*Dij[1]*sqrt(2) )))
-                    # end
-
                     if idx ∈ [1, 2]
                         x[c[1], c[2]] = x[c[2], c[1]] = JuMP.@expression(pm.model, 
                                0.062832 * (c₂ + log(1) - log( c₁*Dij[1] )))
