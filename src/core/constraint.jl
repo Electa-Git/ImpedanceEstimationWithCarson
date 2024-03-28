@@ -11,7 +11,7 @@ function constraint_mc_residual(pm::_PMD.AbstractUnbalancedPowerModel, i::Int; n
     dst = _PMD.ref(pm, nw, :meas, i, "dst")
     rsc = _PMD.ref(pm, 1, :settings)["rescaler"]
     cmp =  _PMD.ref(pm, nw, :meas, i, "cmp")
-    crit = _PMD.ref(pm, nw, :meas, i, "crit")
+    crit = haskey(_PMD.ref(pm, nw, :meas, i), "crit") ? _PMD.ref(pm, nw, :meas, i, "crit") : "rwlav"
 
     if _PMD.ref(pm, nw, :meas, i, "var") == :l
         conns = [1]
@@ -236,6 +236,7 @@ function carson_impedance_expressions(pm::_PMD.AbstractExplicitNeutralIVRModel)
                 # do nothing, symmetry exploited below
             else
                 idx = findfirst(x->x == (c[1], c[2]), distance_indices)
+
                 if !exploit_horizontality && !exploit_squaredness
                     x[c[1], c[2]] = x[c[2], c[1]] = JuMP.@expression(pm.model, 
                                                 0.062832 * (c₂ + log(1) - log( c₁*Dij[idx] )    ) 
@@ -253,17 +254,33 @@ function carson_impedance_expressions(pm::_PMD.AbstractExplicitNeutralIVRModel)
                     x[c[1], c[2]] = x[c[2], c[1]] = JuMP.@expression(pm.model, 
                                                 0.062832 * (c₂ + log(1) - log( c₁*dist_expr )))
                 elseif exploit_squaredness
-                    if idx ∈ [1, 2] 
-                        dist_expr = Dij[1]
-                    elseif idx ∈ [5, 6] 
-                        dist_expr = Dij[4]
+
+                    # if idx ∈ [1, 2, 5, 6]
+                    #     x[c[1], c[2]] = x[c[2], c[1]] = JuMP.@expression(pm.model, 
+                    #            0.062832 * (c₂ + log(1) - log( c₁*Dij[1] )))
+                    # else
+                    #     x[c[1], c[2]] = x[c[2], c[1]] = JuMP.@expression(pm.model, 
+                    #            0.062832 * (c₂ + log(1) - log( c₁*Dij[1]*sqrt(2) )))
+                    # end
+
+                    if idx ∈ [1, 2]
+                        x[c[1], c[2]] = x[c[2], c[1]] = JuMP.@expression(pm.model, 
+                               0.062832 * (c₂ + log(1) - log( c₁*Dij[1] )))
                     elseif idx == 3
-                        dist_expr = Dij[3]
+                        x[c[1], c[2]] = x[c[2], c[1]] = JuMP.@expression(pm.model, 
+                               0.062832 * (c₂ + log(1) - log( c₁*Dij[1]*sqrt(2) )))
                     elseif idx == 4
-                        dist_expr = Dij[2]
+                        x[c[1], c[2]] = x[c[2], c[1]] = JuMP.@expression(pm.model, 
+                                0.062832 * (c₂ + log(1) - log( c₁* (Dij[1]/sqrt(2)+Dij[2]) )))
+                    elseif idx ∈ [5, 6]
+
+                        aux_var = JuMP.@variable(pm.model, base_name="aux_$(i)", lower_bound = 1, upper_bound =  100)
+
+                        JuMP.@constraint(pm.model, aux_var^2 == Dij[2]^2+Dij[1]^2/2)
+
+                        x[c[1], c[2]] = x[c[2], c[1]] = JuMP.@expression(pm.model, 
+                               0.062832 * (c₂ + log(1) - log( c₁*aux_var )))
                     end
-                    x[c[1], c[2]] = x[c[2], c[1]] = JuMP.@expression(pm.model, 
-                            0.062832 * (c₂ + log(1) - log( c₁*dist_expr )))
                 end
             end
         end
