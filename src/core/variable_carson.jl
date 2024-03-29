@@ -173,6 +173,7 @@ function variable_coordinates_and_distances(pm::_PMD.AbstractExplicitNeutralIVRM
 
     dij_2w, report_idx_2w_dij = variable_distances_two_wire_segments(pm, nw)
     dij_3w, report_idx_3w_dij = variable_distances_three_wire_segments(pm, nw)
+    four_w  = [ i for (i,l) in _PMD.ref(pm, nw, :linecode_map) if l["n_wires"] == 4 ]
 
     exploit_horizontality = haskey(_PMD.ref(pm, nw, :settings), "exploit_horizontality") && _PMD.ref(pm, nw, :settings)["exploit_horizontality"]
     exploit_squaredness   = haskey(_PMD.ref(pm, nw, :settings), "exploit_squaredness"  ) && _PMD.ref(pm, nw, :settings)["exploit_squaredness"]
