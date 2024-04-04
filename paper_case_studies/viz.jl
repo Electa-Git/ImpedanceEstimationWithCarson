@@ -1,5 +1,6 @@
 import StatsPlots as _SP
 import Format
+import JSON
 
 """
 plots a dot. different sets of dots for different options / estimated paths
@@ -278,7 +279,53 @@ function generate_summary(folders::Vector{String})
     return super_summary
 end
 
-function powerflow_validation(feeder_name, oh_or_ug, result_path::String, estimated_linecode::String, estimated_branch_length::String, profiles, extra_id::String, validation_timesteps, pf_solver; power_mult::Float64=2.)
+function add_true_shunt_values!(data, estimated_shunts)
+
+    estimated_shunts = JSON.parsefile(estimated_shunts)
+    data["shunt"] = Dict{String, Any}()
+    loads_with_shunts = [l for (l,load) in data["load"]][1:25]
+
+    count_shunts = 1
+    for (l, load) in data["load"]
+        if l ∈ loads_with_shunts
+            data["shunt"][l] = Dict{String, Any}(
+                "shunt_bus" => load["load_bus"],
+                "connections" => load["connections"],
+                "status" => 1,
+                "dispatchable" => 0,
+                "gs" => [0. 0.; 0. estimated_shunts["$l"]["shunt_true"]["gs"]],
+                "bs" => [ 0.  0.; 0. 0.]
+            )
+            count_shunts+=1
+        end
+    end
+
+end
+
+function add_estimated_shunt_values!(data, estimated_shunts)
+
+    estimated_shunts = JSON.parsefile(estimated_shunts)
+    data["shunt"] = Dict{String, Any}()
+    loads_with_shunts = [l for (l,load) in data["load"]][1:25]
+
+    count_shunts = 1
+    for (l, load) in data["load"]
+        if l ∈ loads_with_shunts
+            data["shunt"][l] = Dict{String, Any}(
+                "shunt_bus" => load["load_bus"],
+                "connections" => load["connections"],
+                "status" => 1,
+                "dispatchable" => 0,
+                "gs" => [0. 0.; 0. estimated_shunts["$l"]["shunt_est"]["gs"]],
+                "bs" => [ 0.  0.; 0. 0.]
+            )
+            count_shunts+=1
+        end
+    end
+
+end
+
+function powerflow_validation(feeder_name, oh_or_ug, result_path::String, shunt_results::Any, estimated_linecode::String, estimated_branch_length::String, profiles, extra_id::String, validation_timesteps, pf_solver; power_mult::Float64=2.)
         
     data, eng, z_pu = prepare_math_eng_data(profiles ;feeder_name = feeder_name, oh_or_ug = oh_or_ug)
 
@@ -293,12 +340,14 @@ function powerflow_validation(feeder_name, oh_or_ug, result_path::String, estima
             build_linecode_for_ug_noshunt_30l!(data,eng,z_pu)
         else
             build_linecode_for_oh_ground_30l!(data, eng, z_pu)
+            add_true_shunt_values!(data, shunt_results)
         end
     else
         if oh_or_ug == "ug"
             build_linecode_for_ug_noshunt_eulvtf!(data,eng,z_pu)
         else
-            build_linecode_for_oh_ground_eulvtf!(data, eng, z_pu)
+            build_linecode_for_oh_ground_eulvtf(data, eng, z_pu)
+            add_true_shunt_values!(data, shunt_results)
         end
     end
 
@@ -320,6 +369,9 @@ function powerflow_validation(feeder_name, oh_or_ug, result_path::String, estima
         linecode = linecode_dict[eng["line"][branch["name"]]["linecode"]]
         branch["br_r"] = linecode["rs"].*estimated_branch_length[b]["length_est"]./(z_pu*1000)
         branch["br_x"] = linecode["xs"].*estimated_branch_length[b]["length_est"]./(z_pu*1000)
+    end
+    if oh_or_ug == "oh"
+        add_estimated_shunt_values!(estimated_data, shunt_results)
     end
 
     for (ts_id, ts) in enumerate(validation_timesteps)
