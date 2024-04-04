@@ -6,7 +6,7 @@ import Ipopt
 
 include("utils.jl")
 
-ie_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 3600., "max_iter" => 10000)
+ie_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 1800., "max_iter" => 10000)
 profiles = CSV.read(_IMP.DATA_DIR*"/nrel_profiles.csv", _DF.DataFrame, ntasks = 1)
 pf_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 200., "print_level"=>0 )
 
@@ -45,7 +45,7 @@ function run_impedance_estimation_oh_ground_eulvtf(result_path::String, ie_solve
     mn_data["nw"]["1"]["settings"]["exploit_horizontality"] = true
     mn_data["nw"]["1"]["settings"]["exploit_equal_crossection"] = true
     mn_data["nw"]["1"]["settings"]["exploit_squaredness"] = false
-    mn_data["nw"]["1"]["settings"]["oh_or_ug"] = "ug"
+    mn_data["nw"]["1"]["settings"]["oh_or_ug"] = "oh"
     mn_data["nw"]["1"]["settings"]["rescaler"] = 100.
     mn_data["nw"]["1"]["settings"]["mu_rel"] = 1.
     mn_data["nw"]["1"]["temperature"] = Dict()
@@ -71,7 +71,7 @@ function run_impedance_estimation_oh_ground_eulvtf(result_path::String, ie_solve
     mn_data["nw"]["1"]["settings"]["exploit_horizontality"] = false 
     mn_data["nw"]["1"]["settings"]["exploit_equal_crossection"] = true
     mn_data["nw"]["1"]["settings"]["exploit_squaredness"] = false
-    mn_data["nw"]["1"]["settings"]["oh_or_ug"] = "ug"
+    mn_data["nw"]["1"]["settings"]["oh_or_ug"] = "oh"
     mn_data["nw"]["1"]["settings"]["rescaler"] = 100.
     mn_data["nw"]["1"]["settings"]["mu_rel"] = 1.
     mn_data["nw"]["1"]["temperature"] = Dict()
@@ -97,7 +97,7 @@ function run_impedance_estimation_oh_ground_eulvtf(result_path::String, ie_solve
     mn_data["nw"]["1"]["settings"]["exploit_horizontality"] = true
     mn_data["nw"]["1"]["settings"]["exploit_equal_crossection"] = false
     mn_data["nw"]["1"]["settings"]["exploit_squaredness"] = false
-    mn_data["nw"]["1"]["settings"]["oh_or_ug"] = "ug"
+    mn_data["nw"]["1"]["settings"]["oh_or_ug"] = "oh"
     mn_data["nw"]["1"]["settings"]["rescaler"] = 100.
     mn_data["nw"]["1"]["settings"]["mu_rel"] = 1.
     mn_data["nw"]["1"]["temperature"] = Dict()
@@ -123,7 +123,7 @@ function run_impedance_estimation_oh_ground_eulvtf(result_path::String, ie_solve
     mn_data["nw"]["1"]["settings"]["exploit_horizontality"] = false 
     mn_data["nw"]["1"]["settings"]["exploit_equal_crossection"] = false
     mn_data["nw"]["1"]["settings"]["exploit_squaredness"] = false
-    mn_data["nw"]["1"]["settings"]["oh_or_ug"] = "ug"
+    mn_data["nw"]["1"]["settings"]["oh_or_ug"] = "oh"
     mn_data["nw"]["1"]["settings"]["rescaler"] = 100.
     mn_data["nw"]["1"]["settings"]["mu_rel"] = 1.
     mn_data["nw"]["1"]["temperature"] = Dict()
