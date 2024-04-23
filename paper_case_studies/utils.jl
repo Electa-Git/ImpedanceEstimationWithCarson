@@ -1,3 +1,4 @@
+import DataFrames as _DF
 import Random as _RAN
 
 function add_length_bounds!(mn_data::Dict, length_bounds_percval::Float64)

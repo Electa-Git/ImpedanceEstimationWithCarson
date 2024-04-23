@@ -64,7 +64,7 @@ function cumulative_zrx_boxplot(true_impedance_dict::Dict, est_impedance_path::S
 end
 
 """
-plots a boxplot with one entry for every user
+
 """
 function cumulative_zrx_boxplot_crossconstraint(general_result_path::String, case::String, power_mult::Float64; whatt::String="Zc", ytickz::Vector=[])
     
@@ -425,5 +425,51 @@ function powerflow_validation_boxplot(est_pf::Union{String, _DF.DataFrame}, real
     return p
 end
 
-# cumulative_zrx_per_user(JSON.parsefile(raw"C:\Users\mvanin\OneDrive - KU Leuven\Desktop\repos\DataDrivenImpedanceEstimationWithCarson\paper_results\30l_ug_most_restricted\_case30loads_series__imp_true_scenario_1_.json"), JSON.parsefile(raw"C:\Users\mvanin\OneDrive - KU Leuven\Desktop\repos\DataDrivenImpedanceEstimationWithCarson\paper_results\30l_ug_most_restricted\_case30loads_series__imp_est_scenario_1__ts_50_te_110.json"), " "; whatt="Xc")
+function powerflow_validation_crossconstraint(general_result_path::String, case::String, power_mult::Float64; whatt::String="Zc", ytickz::Vector=[])#(est_pf::Union{String, _DF.DataFrame}, real_pf::Union{String, _DF.DataFrame}; per_user::Bool=false, yticks=[], show_sm_info::Bool=false)
 
+    folders = [f for f in readdir(general_result_path) if occursin(case, f) && !occursin(".png", f)]
+    est_dfs = []
+    real_dfs = []
+    filenames = []
+    for folder in folders 
+        if isdir(joinpath(general_result_path, folder))
+            for file in readdir(joinpath(general_result_path, folder))
+                if occursin("pf_validation_real", file) && occursin("vm_power_mult_$(power_mult)", file)
+                    real_pf = CSV.read(joinpath(general_result_path, folder, "pf_validation_real_vm_power_mult_$power_mult.csv"),_DF.DataFrame, ntasks = 1)
+                    est_pf  = CSV.read(joinpath(general_result_path, folder, "pf_validation_est_vm_power_mult_$power_mult.csv"),_DF.DataFrame, ntasks = 1)
+                    push!(filenames, joinpath(general_result_path, folder, "pf_validation_real_vm_power_mult_$power_mult.csv"))
+                    push!(est_dfs, est_pf)
+                    push!(real_dfs, real_pf)
+                end
+            end
+        end
+    end
+
+    starter_est = est_dfs[1]
+    starter_real = real_dfs[1]
+    starter_label = split(filenames[1], "\\")[end-1]
+
+    diff_df = deepcopy(starter_est)
+    for row in 1:size(diff_df)[1]
+        diff_df[row:row,1:end-2] .= abs.(starter_est[row:row,1:end-2] .- starter_real[row:row,1:end-2])
+    end
+    all_diffs = [i for i in vec(Matrix(diff_df)) if (i isa Float64)]
+
+    p = _SP.boxplot(all_diffs*240, ylabel="| |U|ᵗʳᵘᵉ-|U|ᵉˢᵗ | [V]", xticks = ((),()), labels = "$(starter_label) - power mult $power_mult")
+
+    # adds the other cases
+    for i in 2:length(est_dfs)
+        diff_df = deepcopy(est_dfs[i])
+        for row in 1:size(diff_df)[1]
+            diff_df[row:row,1:end-2] .= abs.(est_dfs[i][row:row,1:end-2] .- real_dfs[i][row:row,1:end-2])
+        end
+        all_diffs = [i for i in vec(Matrix(diff_df)) if (i isa Float64)]
+        p = _SP.boxplot!(all_diffs*240, ylabel="| |U|ᵗʳᵘᵉ-|U|ᵉˢᵗ | [V]", xticks = ((),()), labels = "$(split(filenames[i], "\\")[end-1]) - power mult $power_mult")
+    end
+       
+    if !isempty(ytickz)
+        _SP.plot!(yticks=ytickz)
+    end 
+
+    return p
+end
