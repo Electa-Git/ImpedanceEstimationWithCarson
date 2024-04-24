@@ -354,9 +354,9 @@ function variable_bus_shunt_admittance(pm::_PMD.AbstractExplicitNeutralIVRModel;
 
     g_sh = _PMD.var(pm, nw)[:g_sh] = Dict(i => JuMP.@variable(pm.model,
                 base_name="g_sh_$(i)",
-                lower_bound = 0.,
-                upper_bound = 100/z_pu, 
-                start = _PMD.comp_start_value(_PMD.ref(pm, nw, :bus, i), "g_sh_start", 10/z_pu) 
+                lower_bound = z_pu/100.,
+                upper_bound = z_pu/5., 
+                start = _PMD.comp_start_value(_PMD.ref(pm, nw, :bus, i), "g_sh_start", z_pu/10) 
                 ) for i in _PMD.ids(pm, nw, :bus) 
                      if any(_PMD.ref(pm, nw, :bus, i, "imp_grounded"))
             )
@@ -374,9 +374,9 @@ function variable_bus_shunt_admittance(pm::_PMD.AbstractExplicitNeutralIVRModel;
     if !resistive_only
         b_sh = _PMD.var(pm, nw)[:b_sh] = Dict(i => JuMP.@variable(pm.model,
                     base_name="b_sh_$(i)",
-                    lower_bound = 0., 
-                    upper_bound = 30/z_pu,
-                    start = _PMD.comp_start_value(_PMD.ref(pm, nw, :bus, i), "b_sh_start", 10/z_pu) 
+                    lower_bound = z_pu/30., 
+                    upper_bound = z_pu,
+                    start = _PMD.comp_start_value(_PMD.ref(pm, nw, :bus, i), "b_sh_start", z_pu/10) 
                     ) for i in _PMD.ids(pm, nw, :bus) 
                         if any(_PMD.ref(pm, nw, :bus, i, "imp_grounded"))
                 )

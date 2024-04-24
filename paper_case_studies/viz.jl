@@ -473,3 +473,12 @@ function powerflow_validation_crossconstraint(general_result_path::String, case:
 
     return p
 end
+
+function plot_neutral_shunts(path_to_shunt::String; z_pu::Float64 = 57.68533333333333)
+    shunt_res = JSON.parsefile(path_to_shunt)
+    int_keys = [parse(Int, i) for i in collect(keys(shunt_res))]
+    p = _SP.scatter(int_keys, 1/(z_pu/[shunt_res["$i"]["shunt_est"]["gs"]) for i in int_keys], label = "Estimated")
+    _SP.scatter!(int_keys, 1/(z_pu/[shunt_res["$i"]["shunt_true"]["gs"]) for i in int_keys], label = "True",
+                xlabel = "Shunt id. [-]", ylabel = "Neutral shunt resistance Rˢʰ [Ω]")
+    return p
+end
