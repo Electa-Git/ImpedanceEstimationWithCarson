@@ -6,14 +6,14 @@ import Ipopt
 
 include("utils.jl")
 
-ie_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 3600., "max_iter" => 10000)
+ie_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 3600., "max_iter" => 8000,  "hsllib"=> HSL_jll.libhsl_path, "linear_solver" => "ma27")
 profiles = CSV.read(_IMP.DATA_DIR*"/nrel_profiles.csv", _DF.DataFrame, ntasks = 1)
-pf_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 200., "print_level"=>0 )
+pf_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 200., "print_level" => 0, "hsllib"=> HSL_jll.libhsl_path, "linear_solver" => "ma27" )
 
 timestep_set = find_most_loaded_timesteps(profiles, 200)
 
 for power_mult in [1., 2.]
-    run_impedance_estimation_ug_noshunt_eulvtf(raw"C:\Users\mvanin\OneDrive - KU Leuven\Desktop\repos\DataDrivenImpedanceEstimationWithCarson\paper_results/", ie_solver, pf_solver, profiles, timestep_set, add_meas_noise = true, length_bounds_percval=0.3, power_mult=power_mult, exploit_squaredness = true, exploit_equal_crossection = true)
+    run_impedance_estimation_ug_noshunt_eulvtf(raw"C:\Users\mvanin\OneDrive - KU Leuven\Desktop\repos\DataDrivenImpedanceEstimationWithCarson\results_ma27/", ie_solver, pf_solver, profiles, timestep_set, add_meas_noise = true, length_bounds_percval=0.3, power_mult=power_mult, exploit_squaredness = true, exploit_equal_crossection = true)
 end
 
 function run_impedance_estimation_ug_noshunt_eulvtf(result_path::String, ie_solver, pf_solver, profiles::_DF.DataFrame, timestep_set; scenario_id::Int = 1, add_meas_noise::Bool=true, power_mult::Float64=1., use_length_bounds::Bool=true, length_bounds_percval::Float64=0.10, exploit_equal_crossection::Bool=false, exploit_squaredness::Bool=false, exploit_horizontality::Bool=false)    

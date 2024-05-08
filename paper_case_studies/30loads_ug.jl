@@ -2,18 +2,19 @@ import DataDrivenImpedanceEstimationWithCarson as _IMP
 import CSV
 import DataFrames as _DF
 import PowerModelsDistribution as _PMD
+using MKL
 import Ipopt
-import HSL_jll # will only work if you have the binaries installed
+import HSL_jll
 
 include("utils.jl")
 
 ie_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 1800., "max_iter" => 8000,  "hsllib"=> HSL_jll.libhsl_path, "linear_solver" => "ma27")
 profiles = CSV.read(_IMP.DATA_DIR*"/nrel_profiles.csv", _DF.DataFrame, ntasks = 1)
-pf_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 200., "print_level"=>0 )
+pf_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 200., "print_level" => 0, "hsllib"=> HSL_jll.libhsl_path, "linear_solver" => "ma27" )
 
 timestep_set = find_most_loaded_timesteps(profiles, 200)
 
-for power_mult in [3.0]#[1., 2., 3.]
+for power_mult in [1., 2., 3.]
     run_impedance_estimation_ug_noshunt_30_load_case(raw"C:\Users\mvanin\OneDrive - KU Leuven\Desktop\repos\DataDrivenImpedanceEstimationWithCarson\results_ma27/", ie_solver, pf_solver, profiles, timestep_set, add_meas_noise = true, length_bounds_percval=0.3, power_mult=power_mult, exploit_squaredness = true, exploit_equal_crossection = true)
 end
 
