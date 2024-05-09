@@ -262,7 +262,12 @@ end
 #########                                      #########
 ########################################################
 
-function linecode_plots(general_result_path::String, case::String, feeder_id::String, power_mult::Float64)
+linecode_plots(general_result_path, "30l_ug")
+linecode_plots(general_result_path, "30l_oh")
+linecode_plots(general_result_path, "eulvtf_ug")
+linecode_plots(general_result_path, "eulvtf_oh")
+
+function linecode_plots(general_result_path::String, case::String; feeder_id::String="30load-feeder", power_mult::Float64=1.0)
     master = occursin("oh", case) ? "Master_oh.dss" : "Master_ug.dss"
     eng = _PMD.parse_file(_IMP.NTW_DATA_DIR*"/"*feeder_id*"/"*master, data_model = _PMD.ENGINEERING, transformations=[_PMD.transform_loops!,_PMD.remove_all_bounds!])
 
