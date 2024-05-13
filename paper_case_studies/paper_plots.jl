@@ -395,3 +395,253 @@ function linecode_plots(general_result_path::String, case::String; feeder_id::St
         end
     end
 end
+
+########################################################
+#########                                      #########
+#########         CARSON INPUT PLOTS           #########
+#########                                      #########
+########################################################
+
+carson_input_plots(general_result_path, "30l_ug")
+carson_input_plots(general_result_path, "30l_oh")
+carson_input_plots(general_result_path, "eulvtf_ug")
+carson_input_plots(general_result_path, "eulvtf_oh")
+
+function carson_input_plots(general_result_path::String, case::String; power_mult::Float64=1.0)
+
+    ground_truth = CSV.read(_IMP.DATA_DIR*"/linecode_library/linecode_geometries.csv", _DF.DataFrame, ntasks=1)
+
+    yticks_dict = Dict(
+        "pluto"                                    => [i for i in -1000:100:1000],
+        "uglv_120cu_xlpe/nyl/pvc_ug_4w_bundled"    => [i for i in -20:20:100],
+        "ugsc_16cu_xlpe/nyl/pvc_ug_2w_bundled"     => [i for i in -6:2:6],
+        "hydrogen"                                 => [i for i in -1000:100:1000],
+        "ugsc_25cu_xlpe/nyl/pvc_ug_2w_bundled"     => [i for i in -100:20:40],
+        "uglv_185al_xlpe/nyl/pvc_ug_4w_bundled"    => [i for i in -20:20:100],
+        "abc2x16_lv_oh_2w_bundled"                 => [i for i in -85:20:20],
+        "ugsc_16al_xlpe/pvc_ug_2w_bundled"         => [i for i in   0:-20:-80],
+        "uglv_185al_xlpe/nyl/pvc_ug_2w_bundled"    => [i for i in -50:50:200],
+        "tw2x16_lv_oh_2w_bundled"                  => [i for i in -85:15:15],
+        "uglv_240al_xlpe/nyl/pvc_ug_4w_bundled"    => [i for i in -30:15:45]
+    )
+
+    for linecode in ground_truth.linecode_name
+
+        lc = filter(x->x.linecode_name == linecode, ground_truth)
+        wires =  count(==(','),lc.A_p_true[1]) == 3 ? 4 : 2
+
+        legend_dict = Dict(
+            "30l_ug_cross_only" => L"A_p \, \, \textrm{rest.}",
+            "30l_ug_most_restricted" => L"A_p+\mathcal{G} \, \, \textrm{rest.}",
+            "30l_ug_no_restriction"  => L"\textrm{No} \, \, \textrm{rest.}",
+            "30l_ug_squared_only"   => L"\mathcal{G} \, \, \textrm{rest.}",
+            "30l_oh_cross_only" => L"A_p \, \, \textrm{rest.}",
+            "30l_oh_most_restricted" => L"A_p+\mathcal{G} \, \, \textrm{rest.}",
+            "30l_oh_no_restriction"  => L"\textrm{No} \, \, \textrm{rest.}",
+            "30l_oh_horizontal_only"   => L"\mathcal{G}  \, \, \textrm{rest.}",
+            "eulvtf_ug_cross_only" => L"A_p  \, \, \textrm{rest.}",
+            "eulvtf_ug_most_restricted" => L"A_p+\mathcal{G}  \, \, \textrm{rest.}",
+            "eulvtf_ug_no_restriction"  => L"\textrm{No} \, \, \textrm{rest.}",
+            "eulvtf_ug_squared_only"   => L"\mathcal{G}  \, \, \textrm{rest.}",
+            "eulvtf_oh_cross_only" => L"A_p  \, \, \textrm{rest.}",
+            "eulvtf_oh_most_restricted" => L"A_p+\mathcal{G}  \, \, \textrm{rest.}",
+            "eulvtf_oh_no_restriction"  => L"\textrm{No} \, \, \textrm{rest.}",
+            "eulvtf_oh_horizontal_only"   => L"\mathcal{G}  \, \, \textrm{rest.}"
+        )
+
+        markershape_dict = Dict(
+            "30l_ug_cross_only" => :circle,
+            "30l_ug_most_restricted" => :diamond,
+            "30l_ug_no_restriction"  => :rect,
+            "30l_ug_squared_only"   =>  :utriangle,
+            "30l_oh_cross_only" => :circle,
+            "30l_oh_most_restricted" => :diamond,
+            "30l_oh_no_restriction"  => :rect,
+            "30l_oh_horizontal_only"   =>  :utriangle,
+            "eulvtf_ug_cross_only" => :circle,
+            "eulvtf_ug_most_restricted" => :diamond,
+            "eulvtf_ug_no_restriction"  => :rect,
+            "eulvtf_ug_squared_only"   =>  :utriangle,
+            "eulvtf_oh_cross_only" => :circle,
+            "eulvtf_oh_most_restricted" => :diamond,
+            "eulvtf_oh_no_restriction"  => :rect,
+            "eulvtf_oh_horizontal_only"   =>  :utriangle
+        )
+
+        markersize_dict = Dict(
+            "30l_ug_cross_only" =>8,
+            "30l_ug_most_restricted" =>4,
+            "30l_ug_no_restriction"  =>5,
+            "30l_ug_squared_only"   =>5,
+            "30l_oh_cross_only" =>8,
+            "30l_oh_most_restricted" =>4,
+            "30l_oh_no_restriction"  =>5,
+            "30l_oh_horizontal_only"   =>5,
+            "eulvtf_ug_cross_only" =>8,
+            "eulvtf_ug_most_restricted" =>4,
+            "eulvtf_ug_no_restriction"  =>5,
+            "eulvtf_ug_squared_only"   =>4,
+            "eulvtf_oh_cross_only" =>8,
+            "eulvtf_oh_most_restricted" =>4,
+            "eulvtf_oh_no_restriction"  =>5,
+            "eulvtf_oh_horizontal_only"   =>4
+        )
+
+        d_true = parse.(Float64, split(chop(lc.dist_true[1], head=1),','))
+        A_true = parse.(Float64, split(chop(lc.A_p_true[1], head=1),','))
+
+        p = _SP.plot(legend=:bottomright, ylabel=L"\textrm{Relative} \, \, \textrm{error} \, \, [\%]", label = L"\textrm{True}", xtickfontsize=13,ytickfontsize=12, ylabelfontsize=14, legendfontsize=12)
+
+        folders = [f for f in readdir(general_result_path) if occursin(case, f)]
+
+        return_p = false
+        for folder in folders 
+            if isdir(joinpath(general_result_path, folder))
+                for file in readdir(joinpath(general_result_path, folder))
+                    if occursin("linecode_results", file) && occursin("power_mult_$(power_mult)", file)
+                        df = CSV.read(joinpath(general_result_path, folder, file), _DF.DataFrame, ntasks = 1)
+                        if linecode ∈ df.linecode_name
+                            df = filter(x->x.linecode_name.==linecode, df)
+                            return_p = true
+                            d_est = parse.(Float64, split(chop(string(df.dist_est[1]), head=1),','))
+                            A_est = parse.(Float64, split(chop(string(df.A_p_est[1]) , head=1),','))
+                            if wires == 4
+                                d_est = expand_distance_results(case, d_est)
+                                p = _SP.scatter!([1:10], vcat(A_true, d_true).-vcat(A_est, d_est), 
+                                    xticks=([i for i in 1:10], [L"A_{a}", L"A_{b}", L"A_{c}", L"A_{n}", L"D_{ab}", L"D_{ac}", L"D_{bc}", L"D_{an}", L"D_{bn}", L"D_{cn}"]), 
+                                    legend=:bottomright, label = legend_dict["$folder"], markershape = markershape_dict["$folder"],  color="black", ms = markersize_dict["$folder"], mc=:white)
+                            else
+                                p = _SP.scatter!([0.5:0.5:1.5], vcat(A_true, d_true).-vcat(A_est, d_est),  xticks=([i for i in 0.5:0.5:1.5], [L"A_{p}", L"A_{n}", L"D_{pn}"]), 
+                                    legend=:topright, label = legend_dict["$folder"], markershape = markershape_dict["$folder"],  color="black", ms = markersize_dict["$folder"], mc=:white)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        _SP.yticks!(yticks_dict["$linecode"], [L"%$i" for i in yticks_dict["$linecode"]])
+        if occursin("pluto", linecode) || occursin("hydrogen", linecode)
+            _SP.plot!(ylims=(-350, 500), yscale=:log10)
+        end
+        if return_p
+            _SP.savefig(joinpath(general_result_path, "carsoninput_$(split(linecode, "/")[1])_case_$(case)_power_mult_$(power_mult).png"))
+            _SP.savefig(joinpath(general_result_path, "carsoninput_$(split(linecode, "/")[1])_case_$(case)_power_mult_$(power_mult).pdf"))
+        end
+    end
+end
+
+function expand_distance_results(case::String, d_est::Vector{Float64})
+    if length(d_est) < 6 # this is a reduced distance variable case, needs to be mapped back to 6x vector
+        if occursin("ug", case)
+            d_exp = [d_est[1], d_est[1], d_est[1]*sqrt(2), d_est[1]/sqrt(2)+d_est[2], sqrt(d_est[2]^2+d_est[1]^2/2), sqrt(d_est[2]^2+d_est[1]^2/2)]
+        else # overhead line
+            d_exp = [d_est[1], d_est[1]+d_est[2], d_est[2], sum(d_est), d_est[2]+d_est[3], d_est[3]]
+        end
+        return d_exp
+    else
+        return d_est
+    end
+end
+
+########################################################
+#########                                      #########
+#########      BRANCH LENGTH PLOTS             #########
+#########                                      #########
+########################################################
+
+function branch_length_plots(general_result_path::String, case::String; power_mult::Float64=1.0)
+
+    yticks_dict = Dict(
+        "pluto"                                    => [i for i in -1000:100:1000],
+        "uglv_120cu_xlpe/nyl/pvc_ug_4w_bundled"    => [i for i in -20:20:100],
+        "ugsc_16cu_xlpe/nyl/pvc_ug_2w_bundled"     => [i for i in -6:2:6],
+        "hydrogen"                                 => [i for i in -1000:100:1000],
+        "ugsc_25cu_xlpe/nyl/pvc_ug_2w_bundled"     => [i for i in -100:20:40],
+        "uglv_185al_xlpe/nyl/pvc_ug_4w_bundled"    => [i for i in -20:20:100],
+        "abc2x16_lv_oh_2w_bundled"                 => [i for i in -85:20:20],
+        "ugsc_16al_xlpe/pvc_ug_2w_bundled"         => [i for i in   0:-20:-80],
+        "uglv_185al_xlpe/nyl/pvc_ug_2w_bundled"    => [i for i in -50:50:200],
+        "tw2x16_lv_oh_2w_bundled"                  => [i for i in -85:15:15],
+        "uglv_240al_xlpe/nyl/pvc_ug_4w_bundled"    => [i for i in -30:15:45]
+    )
+
+    legend_dict = Dict(
+        "30l_ug_cross_only" => L"A_p \, \, \textrm{rest.}",
+        "30l_ug_most_restricted" => L"A_p+\mathcal{G} \, \, \textrm{rest.}",
+        "30l_ug_no_restriction"  => L"\textrm{No} \, \, \textrm{rest.}",
+        "30l_ug_squared_only"   => L"\mathcal{G} \, \, \textrm{rest.}",
+        "30l_oh_cross_only" => L"A_p \, \, \textrm{rest.}",
+        "30l_oh_most_restricted" => L"A_p+\mathcal{G} \, \, \textrm{rest.}",
+        "30l_oh_no_restriction"  => L"\textrm{No} \, \, \textrm{rest.}",
+        "30l_oh_horizontal_only"   => L"\mathcal{G}  \, \, \textrm{rest.}",
+        "eulvtf_ug_cross_only" => L"A_p  \, \, \textrm{rest.}",
+        "eulvtf_ug_most_restricted" => L"A_p+\mathcal{G}  \, \, \textrm{rest.}",
+        "eulvtf_ug_no_restriction"  => L"\textrm{No} \, \, \textrm{rest.}",
+        "eulvtf_ug_squared_only"   => L"\mathcal{G}  \, \, \textrm{rest.}",
+        "eulvtf_oh_cross_only" => L"A_p  \, \, \textrm{rest.}",
+        "eulvtf_oh_most_restricted" => L"A_p+\mathcal{G}  \, \, \textrm{rest.}",
+        "eulvtf_oh_no_restriction"  => L"\textrm{No} \, \, \textrm{rest.}",
+        "eulvtf_oh_horizontal_only"   => L"\mathcal{G}  \, \, \textrm{rest.}"
+    )
+
+    markershape_dict = Dict(
+        "30l_ug_cross_only" => :circle,
+        "30l_ug_most_restricted" => :diamond,
+        "30l_ug_no_restriction"  => :rect,
+        "30l_ug_squared_only"   =>  :utriangle,
+        "30l_oh_cross_only" => :circle,
+        "30l_oh_most_restricted" => :diamond,
+        "30l_oh_no_restriction"  => :rect,
+        "30l_oh_horizontal_only"   =>  :utriangle,
+        "eulvtf_ug_cross_only" => :circle,
+        "eulvtf_ug_most_restricted" => :diamond,
+        "eulvtf_ug_no_restriction"  => :rect,
+        "eulvtf_ug_squared_only"   =>  :utriangle,
+        "eulvtf_oh_cross_only" => :circle,
+        "eulvtf_oh_most_restricted" => :diamond,
+        "eulvtf_oh_no_restriction"  => :rect,
+        "eulvtf_oh_horizontal_only"   =>  :utriangle
+    )
+
+    markersize_dict = Dict(
+        "30l_ug_cross_only" =>8,
+        "30l_ug_most_restricted" =>4,
+        "30l_ug_no_restriction"  =>5,
+        "30l_ug_squared_only"   =>5,
+        "30l_oh_cross_only" =>8,
+        "30l_oh_most_restricted" =>4,
+        "30l_oh_no_restriction"  =>5,
+        "30l_oh_horizontal_only"   =>5,
+        "eulvtf_ug_cross_only" =>8,
+        "eulvtf_ug_most_restricted" =>4,
+        "eulvtf_ug_no_restriction"  =>5,
+        "eulvtf_ug_squared_only"   =>4,
+        "eulvtf_oh_cross_only" =>8,
+        "eulvtf_oh_most_restricted" =>4,
+        "eulvtf_oh_no_restriction"  =>5,
+        "eulvtf_oh_horizontal_only"   =>4
+    )
+
+    master = occursin("oh", case) ? "Master_oh.dss" : "Master_ug.dss"
+    eng = _PMD.parse_file(_IMP.NTW_DATA_DIR*"/"*feeder_id*"/"*master, data_model = _PMD.ENGINEERING, transformations=[_PMD.transform_loops!,_PMD.remove_all_bounds!])
+
+    p = _SP.plot(legend=:bottomright, ylabel=L"\textrm{Relative} \, \, \textrm{error} \, \, [\%]", label = L"\textrm{True}", xtickfontsize=13,ytickfontsize=12, ylabelfontsize=14, legendfontsize=12)
+
+    folders = [f for f in readdir(general_result_path) if occursin(case, f)]
+
+    return_p = false
+    for folder in folders 
+        if isdir(joinpath(general_result_path, folder))
+            for file in readdir(joinpath(general_result_path, folder))
+                if occursin("length_dict", file) && occursin("power_mult_$(power_mult)", file)
+                    dict = JSON.read(joinpath(general_result_path, folder, file), _DF.DataFrame, ntasks = 1)
+                    p = _SP.scatter!([1:10], vcat(A_true, d_true).-vcat(A_est, d_est), 
+                        xticks=([i for i in 1:10], [L"A_{a}", L"A_{b}", L"A_{c}", L"A_{n}", L"D_{ab}", L"D_{ac}", L"D_{bc}", L"D_{an}", L"D_{bn}", L"D_{cn}"]), 
+                        legend=:bottomright, label = legend_dict["$folder"], markershape = markershape_dict["$folder"],  color="black", ms = markersize_dict["$folder"], mc=:white)
+                end
+            end
+        end
+    end
+    _SP.savefig(joinpath(general_result_path, "branch_length_case_$(case)_power_mult_$(power_mult).png"))
+    _SP.savefig(joinpath(general_result_path, "branch_length_case_$(case)_power_mult_$(power_mult).pdf"))
+end
