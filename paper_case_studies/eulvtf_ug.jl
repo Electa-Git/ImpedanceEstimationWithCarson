@@ -2,7 +2,9 @@ import DataDrivenImpedanceEstimationWithCarson as _IMP
 import CSV
 import DataFrames as _DF
 import PowerModelsDistribution as _PMD
+using MKL
 import Ipopt
+import HSL_jll
 
 include("utils.jl")
 

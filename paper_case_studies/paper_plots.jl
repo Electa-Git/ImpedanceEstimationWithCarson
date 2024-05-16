@@ -412,17 +412,17 @@ function carson_input_plots(general_result_path::String, case::String; power_mul
     ground_truth = CSV.read(_IMP.DATA_DIR*"/linecode_library/linecode_geometries.csv", _DF.DataFrame, ntasks=1)
 
     yticks_dict = Dict(
-        "pluto"                                    => [i for i in -1000:100:1000],
-        "uglv_120cu_xlpe/nyl/pvc_ug_4w_bundled"    => [i for i in -20:20:100],
-        "ugsc_16cu_xlpe/nyl/pvc_ug_2w_bundled"     => [i for i in -6:2:6],
-        "hydrogen"                                 => [i for i in -1000:100:1000],
-        "ugsc_25cu_xlpe/nyl/pvc_ug_2w_bundled"     => [i for i in -100:20:40],
+        "pluto"                                    => [i for i in -150:50:150],
+        "uglv_120cu_xlpe/nyl/pvc_ug_4w_bundled"    => [i for i in -20:5:15],
+        "ugsc_16cu_xlpe/nyl/pvc_ug_2w_bundled"     => [-1200, 25],
+        "hydrogen"                                 => [i for i in -150:50:150],
+        "ugsc_25cu_xlpe/nyl/pvc_ug_2w_bundled"     => [-1200, 40, 70],
         "uglv_185al_xlpe/nyl/pvc_ug_4w_bundled"    => [i for i in -20:20:100],
-        "abc2x16_lv_oh_2w_bundled"                 => [i for i in -85:20:20],
-        "ugsc_16al_xlpe/pvc_ug_2w_bundled"         => [i for i in   0:-20:-80],
-        "uglv_185al_xlpe/nyl/pvc_ug_2w_bundled"    => [i for i in -50:50:200],
-        "tw2x16_lv_oh_2w_bundled"                  => [i for i in -85:15:15],
-        "uglv_240al_xlpe/nyl/pvc_ug_4w_bundled"    => [i for i in -30:15:45]
+        "abc2x16_lv_oh_2w_bundled"                 => occursin("eulvtf", case) ? vcat([-190, -150], [-5, 30, 50, 70]) : vcat([-1200], [25]),
+        "ugsc_16al_xlpe/pvc_ug_2w_bundled"         => [-1200, 25],
+        "uglv_185al_xlpe/nyl/pvc_ug_2w_bundled"    => [100, -1200],
+        "tw2x16_lv_oh_2w_bundled"                  => vcat([-1200], [25]),
+        "uglv_240al_xlpe/nyl/pvc_ug_4w_bundled"    => [i for i in -30:15:90]
     )
 
     for linecode in ground_truth.linecode_name
@@ -507,11 +507,11 @@ function carson_input_plots(general_result_path::String, case::String; power_mul
                             A_est = parse.(Float64, split(chop(string(df.A_p_est[1]) , head=1),','))
                             if wires == 4
                                 d_est = expand_distance_results(case, d_est)
-                                p = _SP.scatter!([1:10], vcat(A_true, d_true).-vcat(A_est, d_est), 
+                                p = _SP.scatter!([1:10], (vcat(A_true, d_true).-vcat(A_est, d_est))./vcat(A_true, d_true)*100, 
                                     xticks=([i for i in 1:10], [L"A_{a}", L"A_{b}", L"A_{c}", L"A_{n}", L"D_{ab}", L"D_{ac}", L"D_{bc}", L"D_{an}", L"D_{bn}", L"D_{cn}"]), 
                                     legend=:bottomright, label = legend_dict["$folder"], markershape = markershape_dict["$folder"],  color="black", ms = markersize_dict["$folder"], mc=:white)
                             else
-                                p = _SP.scatter!([0.5:0.5:1.5], vcat(A_true, d_true).-vcat(A_est, d_est),  xticks=([i for i in 0.5:0.5:1.5], [L"A_{p}", L"A_{n}", L"D_{pn}"]), 
+                                p = _SP.scatter!([0.5:0.5:1.5], (vcat(A_true, d_true).-vcat(A_est, d_est))./vcat(A_true, d_true)*100,  xticks=([i for i in 0.5:0.5:1.5], [L"A_{p}", L"A_{n}", L"D_{pn}"]), 
                                     legend=:topright, label = legend_dict["$folder"], markershape = markershape_dict["$folder"],  color="black", ms = markersize_dict["$folder"], mc=:white)
                             end
                         end
@@ -521,7 +521,7 @@ function carson_input_plots(general_result_path::String, case::String; power_mul
         end
         _SP.yticks!(yticks_dict["$linecode"], [L"%$i" for i in yticks_dict["$linecode"]])
         if occursin("pluto", linecode) || occursin("hydrogen", linecode)
-            _SP.plot!(ylims=(-350, 500), yscale=:log10)
+            _SP.plot!(ylims=(-150, 150), yscale=:log10)
         end
         if return_p
             _SP.savefig(joinpath(general_result_path, "carsoninput_$(split(linecode, "/")[1])_case_$(case)_power_mult_$(power_mult).png"))
@@ -549,99 +549,152 @@ end
 #########                                      #########
 ########################################################
 
+branch_length_plots(general_result_path, "30l_ug")
+branch_length_plots(general_result_path, "30l_oh")
+branch_length_plots(general_result_path, "eulvtf_ug")
+branch_length_plots(general_result_path, "eulvtf_oh")
+
 function branch_length_plots(general_result_path::String, case::String; power_mult::Float64=1.0)
 
-    yticks_dict = Dict(
-        "pluto"                                    => [i for i in -1000:100:1000],
-        "uglv_120cu_xlpe/nyl/pvc_ug_4w_bundled"    => [i for i in -20:20:100],
-        "ugsc_16cu_xlpe/nyl/pvc_ug_2w_bundled"     => [i for i in -6:2:6],
-        "hydrogen"                                 => [i for i in -1000:100:1000],
-        "ugsc_25cu_xlpe/nyl/pvc_ug_2w_bundled"     => [i for i in -100:20:40],
-        "uglv_185al_xlpe/nyl/pvc_ug_4w_bundled"    => [i for i in -20:20:100],
-        "abc2x16_lv_oh_2w_bundled"                 => [i for i in -85:20:20],
-        "ugsc_16al_xlpe/pvc_ug_2w_bundled"         => [i for i in   0:-20:-80],
-        "uglv_185al_xlpe/nyl/pvc_ug_2w_bundled"    => [i for i in -50:50:200],
-        "tw2x16_lv_oh_2w_bundled"                  => [i for i in -85:15:15],
-        "uglv_240al_xlpe/nyl/pvc_ug_4w_bundled"    => [i for i in -30:15:45]
-    )
+    profiles = CSV.read(_IMP.DATA_DIR*"/nrel_profiles.csv", _DF.DataFrame, ntasks = 1)[1:2,:]
+    oh_or_ug = occursin("oh", case) ? "oh" : "ug"
+    feeder_name = occursin("30", case) ? "30load-feeder" : "eulvtf"
 
-    legend_dict = Dict(
-        "30l_ug_cross_only" => L"A_p \, \, \textrm{rest.}",
-        "30l_ug_most_restricted" => L"A_p+\mathcal{G} \, \, \textrm{rest.}",
-        "30l_ug_no_restriction"  => L"\textrm{No} \, \, \textrm{rest.}",
-        "30l_ug_squared_only"   => L"\mathcal{G} \, \, \textrm{rest.}",
-        "30l_oh_cross_only" => L"A_p \, \, \textrm{rest.}",
-        "30l_oh_most_restricted" => L"A_p+\mathcal{G} \, \, \textrm{rest.}",
-        "30l_oh_no_restriction"  => L"\textrm{No} \, \, \textrm{rest.}",
-        "30l_oh_horizontal_only"   => L"\mathcal{G}  \, \, \textrm{rest.}",
-        "eulvtf_ug_cross_only" => L"A_p  \, \, \textrm{rest.}",
-        "eulvtf_ug_most_restricted" => L"A_p+\mathcal{G}  \, \, \textrm{rest.}",
-        "eulvtf_ug_no_restriction"  => L"\textrm{No} \, \, \textrm{rest.}",
-        "eulvtf_ug_squared_only"   => L"\mathcal{G}  \, \, \textrm{rest.}",
-        "eulvtf_oh_cross_only" => L"A_p  \, \, \textrm{rest.}",
-        "eulvtf_oh_most_restricted" => L"A_p+\mathcal{G}  \, \, \textrm{rest.}",
-        "eulvtf_oh_no_restriction"  => L"\textrm{No} \, \, \textrm{rest.}",
-        "eulvtf_oh_horizontal_only"   => L"\mathcal{G}  \, \, \textrm{rest.}"
-    )
+    data, eng, z_pu = prepare_math_eng_data(profiles; feeder_name = feeder_name, oh_or_ug = oh_or_ug);
+    
+    service_branches = [b for (b,br) in data["branch"] if length(br["t_connections"])==2]
+    main_branches = [b for (b,br) in data["branch"] if b ∉ service_branches]
 
-    markershape_dict = Dict(
-        "30l_ug_cross_only" => :circle,
-        "30l_ug_most_restricted" => :diamond,
-        "30l_ug_no_restriction"  => :rect,
-        "30l_ug_squared_only"   =>  :utriangle,
-        "30l_oh_cross_only" => :circle,
-        "30l_oh_most_restricted" => :diamond,
-        "30l_oh_no_restriction"  => :rect,
-        "30l_oh_horizontal_only"   =>  :utriangle,
-        "eulvtf_ug_cross_only" => :circle,
-        "eulvtf_ug_most_restricted" => :diamond,
-        "eulvtf_ug_no_restriction"  => :rect,
-        "eulvtf_ug_squared_only"   =>  :utriangle,
-        "eulvtf_oh_cross_only" => :circle,
-        "eulvtf_oh_most_restricted" => :diamond,
-        "eulvtf_oh_no_restriction"  => :rect,
-        "eulvtf_oh_horizontal_only"   =>  :utriangle
-    )
-
-    markersize_dict = Dict(
-        "30l_ug_cross_only" =>8,
-        "30l_ug_most_restricted" =>4,
-        "30l_ug_no_restriction"  =>5,
-        "30l_ug_squared_only"   =>5,
-        "30l_oh_cross_only" =>8,
-        "30l_oh_most_restricted" =>4,
-        "30l_oh_no_restriction"  =>5,
-        "30l_oh_horizontal_only"   =>5,
-        "eulvtf_ug_cross_only" =>8,
-        "eulvtf_ug_most_restricted" =>4,
-        "eulvtf_ug_no_restriction"  =>5,
-        "eulvtf_ug_squared_only"   =>4,
-        "eulvtf_oh_cross_only" =>8,
-        "eulvtf_oh_most_restricted" =>4,
-        "eulvtf_oh_no_restriction"  =>5,
-        "eulvtf_oh_horizontal_only"   =>4
-    )
-
-    master = occursin("oh", case) ? "Master_oh.dss" : "Master_ug.dss"
-    eng = _PMD.parse_file(_IMP.NTW_DATA_DIR*"/"*feeder_id*"/"*master, data_model = _PMD.ENGINEERING, transformations=[_PMD.transform_loops!,_PMD.remove_all_bounds!])
-
-    p = _SP.plot(legend=:bottomright, ylabel=L"\textrm{Relative} \, \, \textrm{error} \, \, [\%]", label = L"\textrm{True}", xtickfontsize=13,ytickfontsize=12, ylabelfontsize=14, legendfontsize=12)
+    ps = _SP.plot(legend=false, ylabel=L"\textrm{Relative} \, \, \textrm{error} \, \, [\%] - \textrm{Service} \, \, \textrm{cable}", label = L"\textrm{True}", xtickfontsize=13,ytickfontsize=12, ylabelfontsize=14, legendfontsize=12)
+    pm = _SP.plot(legend=false, ylabel=L"\textrm{Relative} \, \, \textrm{error} \, \, [\%] - \textrm{Main} \, \, \textrm{cable}" , label = L"\textrm{True}", xtickfontsize=13,ytickfontsize=12, ylabelfontsize=14, legendfontsize=12)
 
     folders = [f for f in readdir(general_result_path) if occursin(case, f)]
 
-    return_p = false
-    for folder in folders 
+    legend_filenames = []
+    xposition = 1
+    for folder in folders
+        if occursin("no_restriction", folder) push!(legend_filenames, L"\textrm{No  \, \, rest.}") end
+        if occursin("most_restricted", folder) push!(legend_filenames, L"A_p+\mathcal{G}  \, \, \textrm{rest.}") end
+        if occursin("cross", folder) push!(legend_filenames, L"A_p  \, \, \textrm{rest.}") end
+        if (occursin("horizontal", folder) || occursin("square", folder)) push!(legend_filenames, L"\mathcal{G}  \, \, \textrm{rest.}") end
         if isdir(joinpath(general_result_path, folder))
             for file in readdir(joinpath(general_result_path, folder))
                 if occursin("length_dict", file) && occursin("power_mult_$(power_mult)", file)
-                    dict = JSON.read(joinpath(general_result_path, folder, file), _DF.DataFrame, ntasks = 1)
-                    p = _SP.scatter!([1:10], vcat(A_true, d_true).-vcat(A_est, d_est), 
-                        xticks=([i for i in 1:10], [L"A_{a}", L"A_{b}", L"A_{c}", L"A_{n}", L"D_{ab}", L"D_{ac}", L"D_{bc}", L"D_{an}", L"D_{bn}", L"D_{cn}"]), 
-                        legend=:bottomright, label = legend_dict["$folder"], markershape = markershape_dict["$folder"],  color="black", ms = markersize_dict["$folder"], mc=:white)
+                    dict = JSON.parsefile(joinpath(general_result_path, folder, file))
+                    service_est = []
+                    main_est = []
+                    service_true = []
+                    main_true = []
+                    for (b,br) in dict
+                        if b ∈ service_branches
+                            push!(service_est, br["length_est"])
+                            push!(service_true, br["length_true"])
+                        else
+                            push!(main_est, br["length_est"])
+                            push!(main_true, br["length_true"])
+                        end
+                    end    
+                    pm = _SP.boxplot!(pm, [xposition],(main_true.-main_est)./main_true*100, yticks = ([i for i in -30:10:30], [L"%$i" for i in -30:10:30]),
+                        legend=:bottomright, color="lightgrey", xticks = ((1:4),legend_filenames))
+                    pm = _SP.dotplot!(pm,  [xposition],(main_true.-main_est)./main_true*100, color="grey", legend=false)
+                    ps = _SP.boxplot!(ps,  [xposition],(service_true.-service_est)./service_true*100, yticks = ([i for i in -30:10:30], [L"%$i" for i in -30:10:30]),
+                        legend=:bottomright,  color="lightgrey",xticks = ((1:4),legend_filenames))     
+                    ps = _SP.dotplot!(ps,  [xposition],(service_true.-service_est)./service_true*100, color="grey", legend=false)
+                    xposition+=1
                 end
             end
         end
     end
-    _SP.savefig(joinpath(general_result_path, "branch_length_case_$(case)_power_mult_$(power_mult).png"))
-    _SP.savefig(joinpath(general_result_path, "branch_length_case_$(case)_power_mult_$(power_mult).pdf"))
+    _SP.savefig(pm, joinpath(general_result_path, "branch_length_main_case_$(case)_power_mult_$(power_mult).png"))
+    _SP.savefig(pm, joinpath(general_result_path, "branch_length_main_case_$(case)_power_mult_$(power_mult).pdf"))
+    _SP.savefig(ps, joinpath(general_result_path, "branch_length_service_case_$(case)_power_mult_$(power_mult).png"))
+    _SP.savefig(ps, joinpath(general_result_path, "branch_length_service_case_$(case)_power_mult_$(power_mult).pdf"))
+end
+
+########################################################
+#########                                      #########
+#########              SHUNT PLOTS             #########
+#########                                      #########
+########################################################
+
+shunt_plots_box(general_result_path, "30l_oh")
+shunt_plots_scatter(general_result_path, "30l_oh")
+
+# shunt_plots_abs(general_result_path, "eulvtf_oh")
+
+function shunt_plots_box(general_result_path::String, case::String; power_mult::Float64=1.0)
+
+    p = _SP.plot(legend=false, ylabel = L"(\textrm{g}^{\textrm{sh,true}} - \textrm{g}^{\textrm{sh,est}})/\textrm{g}^{\textrm{sh,true}} \times 100 [\%]", xtickfontsize=13,ytickfontsize=12, ylabelfontsize=14, legendfontsize=12)
+    q = _SP.plot(legend=false, ylabel = L"Siemens", xtickfontsize=13,ytickfontsize=12, ylabelfontsize=14, legendfontsize=12)
+    #ylabel=L"\textrm{Relative} \, \, \textrm{error} \, \, [\%]"
+
+    folders = [f for f in readdir(general_result_path) if occursin(case, f)]
+
+    legend_filenames = []
+    xposition = 1
+    for folder in folders
+        if occursin("no_restriction", folder) push!(legend_filenames, L"\textrm{No  \, \, rest.}") end
+        if occursin("most_restricted", folder) push!(legend_filenames, L"A_p+\mathcal{G}  \, \, \textrm{rest.}") end
+        if occursin("cross", folder) push!(legend_filenames, L"A_p  \, \, \textrm{rest.}") end
+        if (occursin("horizontal", folder) || occursin("square", folder)) push!(legend_filenames, L"\mathcal{G}  \, \, \textrm{rest.}") end
+        if isdir(joinpath(general_result_path, folder))
+            for file in readdir(joinpath(general_result_path, folder))
+                if occursin("ground__shunts", file) && occursin("power_mult_$(power_mult)", file)
+                    dict = JSON.parsefile(joinpath(general_result_path, folder, file))
+                    shunt_est  = []
+                    shunt_true = []
+                    for (_, sh) in dict
+                        push!(shunt_est, sh["shunt_est"]["gs"])
+                        push!(shunt_true, sh["shunt_true"]["gs"])
+                    end
+                    p = _SP.boxplot!(p, [xposition], (shunt_true.-shunt_est)./shunt_true*100, 
+                     color="lightgrey", legend = false)
+                    p = _SP.dotplot!(p, [xposition], (shunt_true.-shunt_est)./shunt_true*100, color="grey", legend=false)
+                    q = _SP.boxplot!(q, [xposition], (shunt_true .- shunt_est)*1/57.68533333333333, 
+                        color="lightgrey", legend = false)
+                    q = _SP.dotplot!(q, [xposition], (shunt_true .- shunt_est)*1/57.68533333333333, color="grey", legend=false)
+                    xposition+=1
+                end
+            end
+        end
+    end
+    _SP.plot!(p, xticks = (1:4,legend_filenames[1:4]))
+    _SP.savefig(p, joinpath(general_result_path, "shunt_case_$(case)_power_mult_$(power_mult).png"))
+    _SP.savefig(p, joinpath(general_result_path, "shunt_case_$(case)_power_mult_$(power_mult).pdf"))
+    _SP.plot!(q, xticks = (1:4,legend_filenames[1:4]))
+    _SP.savefig(q, joinpath(general_result_path, "shunt_case_abs_$(case)_power_mult_$(power_mult).png"))
+    _SP.savefig(q, joinpath(general_result_path, "shunt_case_abs_$(case)_power_mult_$(power_mult).pdf"))
+
+end
+
+function shunt_plots_scatter(general_result_path::String, case::String; power_mult::Float64=1.0)
+
+    p = _SP.plot(ylabel=L"\textrm{Error} \, \, [\Omega^{-1}] - \textrm{Neutral} \, \, \textrm{shunt}", label = L"\textrm{True}", xtickfontsize=13,ytickfontsize=12, ylabelfontsize=14, legendfontsize=12)
+
+    folders = [f for f in readdir(general_result_path) if occursin(case, f)]
+
+    legend_filenames = []
+    for folder in folders
+        if isdir(joinpath(general_result_path, folder))
+            for file in readdir(joinpath(general_result_path, folder))
+                if occursin("ground__shunts", file) && occursin("power_mult_$(power_mult)", file)
+                    if occursin("no_restriction", folder) push!(legend_filenames, L"\textrm{No  \, \, rest.}") end
+                    if occursin("most_restricted", folder) push!(legend_filenames, L"A_p+\mathcal{G}  \, \, \textrm{rest.}") end
+                    if occursin("cross", folder) push!(legend_filenames, L"A_p  \, \, \textrm{rest.}") end
+                    if (occursin("horizontal", folder) || occursin("square", folder)) push!(legend_filenames, L"\mathcal{G}  \, \, \textrm{rest.}") end            
+                    dict = JSON.parsefile(joinpath(general_result_path, folder, file))
+                    shunt_est  = []
+                    shunt_true = []
+                    for (_, sh) in dict
+                        push!(shunt_est, sh["shunt_est"]["gs"])
+                        push!(shunt_true, sh["shunt_true"]["gs"])
+                    end
+                    p = _SP.scatter!(p, shunt_true, color="lightgrey", label = "True")
+                    p = _SP.scatter!(p, shunt_est , color="grey", label=legend_filenames[end])
+                end
+            end
+        end
+    end
+    _SP.savefig(p, joinpath(general_result_path, "shunt_case_scatter_$(case)_power_mult_$(power_mult).png"))
+    _SP.savefig(p, joinpath(general_result_path, "shunt_case_scatter_$(case)_power_mult_$(power_mult).pdf"))
 end

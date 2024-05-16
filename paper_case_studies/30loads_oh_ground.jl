@@ -14,7 +14,7 @@ pf_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 20
 
 timestep_set = find_most_loaded_timesteps(profiles, 200)
 
-for power_mult in [1., 2., 3.,]
+for power_mult in [1.]
     run_impedance_estimation_oh_ground_30_load_case(raw"C:\Users\mvanin\OneDrive - KU Leuven\Desktop\repos\DataDrivenImpedanceEstimationWithCarson\results_ma27", ie_solver, pf_solver, profiles, timestep_set, add_meas_noise = true, length_bounds_percval=0.3, power_mult=power_mult, exploit_horizontality = true, exploit_equal_crossection = true)
 end
 
@@ -28,7 +28,7 @@ function run_impedance_estimation_oh_ground_30_load_case(result_path::String, ie
 
     loads_with_shunts = [l for (l,load) in data["load"]][1:25]
     buses_with_shunts = [data["load"][l]["load_bus"] for l in loads_with_shunts]
-    gs = _RAN.rand(z_pu/[10., 20., 30., 40., 50., 60., 70., 80.], 25)
+    gs = _RAN.rand(z_pu./[10., 20., 30., 40., 50., 60., 70., 80.], 25)
     bs = shunt_resistive ? gs.*0. : gs./(3 * 1/z_pu)
     mn_data, real_volts, real_vas = _IMP.build_multinetwork_dsse_data_with_shunts(data, profiles, pf_solver; timestep_set = timestep_set, loads_with_shunts=loads_with_shunts, gs = gs, bs= bs, add_noise=add_meas_noise, seed = scenario_id, power_mult = power_mult)
 
