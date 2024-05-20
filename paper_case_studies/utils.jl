@@ -330,3 +330,124 @@ function find_most_loaded_timesteps(profiles::_DF.DataFrame, nr_timesteps::Int)
         )
     return sorted_df.idx[1:nr_timesteps]
 end
+
+function add_true_shunt_values!(data, estimated_shunts)
+
+    estimated_shunts = JSON.parsefile(estimated_shunts)
+    data["shunt"] = Dict{String, Any}()
+    loads_with_shunts = [l for (l,load) in data["load"]][1:25]
+
+    count_shunts = 1
+    for (l, load) in data["load"]
+        if l ∈ loads_with_shunts
+            data["shunt"][l] = Dict{String, Any}(
+                "shunt_bus" => load["load_bus"],
+                "connections" => load["connections"],
+                "status" => 1,
+                "dispatchable" => 0,
+                "gs" => [0. 0.; 0. estimated_shunts["$l"]["shunt_true"]["gs"]],
+                "bs" => [ 0.  0.; 0. 0.]
+            )
+            count_shunts+=1
+        end
+    end
+end
+
+function add_estimated_shunt_values!(data, estimated_shunts)
+
+    estimated_shunts = JSON.parsefile(estimated_shunts)
+    data["shunt"] = Dict{String, Any}()
+    loads_with_shunts = [l for (l,load) in data["load"]][1:25]
+
+    count_shunts = 1
+    for (l, load) in data["load"]
+        if l ∈ loads_with_shunts
+            data["shunt"][l] = Dict{String, Any}(
+                "shunt_bus" => load["load_bus"],
+                "connections" => load["connections"],
+                "status" => 1,
+                "dispatchable" => 0,
+                "gs" => [0. 0.; 0. estimated_shunts["$l"]["shunt_est"]["gs"]],
+                "bs" => [ 0.  0.; 0. 0.]
+            )
+            count_shunts+=1
+        end
+    end
+
+end
+
+function powerflow_validation(feeder_name, oh_or_ug, result_path::String, shunt_results::Any, estimated_linecode::String, estimated_branch_length::String, profiles, extra_id::String, validation_timesteps, pf_solver; power_mult::Float64=2.)
+        
+    data, eng, z_pu = prepare_math_eng_data(profiles ;feeder_name = feeder_name, oh_or_ug = oh_or_ug)
+
+    real_volts = _DF.DataFrame(fill([], length(data["load"])+2), vcat(["load_$(l)_ph_$(load["connections"][1])" for (l,load) in data["load"]], ["time_step", "termination_status"]))
+    est_volts  = _DF.DataFrame(fill([], length(data["load"])+2), vcat(["load_$(l)_ph_$(load["connections"][1])" for (l,load) in data["load"]], ["time_step", "termination_status"]))
+
+    real_va = _DF.DataFrame(fill([], length(data["load"])+2), vcat(["load_$(l)_ph_$(load["connections"][1])" for (l,load) in data["load"]], ["time_step", "termination_status"]))
+    est_va  = _DF.DataFrame(fill([], length(data["load"])+2), vcat(["load_$(l)_ph_$(load["connections"][1])" for (l,load) in data["load"]], ["time_step", "termination_status"]))
+
+    if feeder_name == "30load-feeder"
+        if oh_or_ug == "ug"
+            build_linecode_for_ug_noshunt_30l!(data,eng,z_pu)
+        else
+            build_linecode_for_oh_ground_30l!(data, eng, z_pu)
+            add_true_shunt_values!(data, shunt_results)
+        end
+    else
+        if oh_or_ug == "ug"
+            build_linecode_for_ug_noshunt_eulvtf!(data,eng,z_pu)
+        else
+            build_linecode_for_oh_ground_eulvtf(data, eng, z_pu)
+            add_true_shunt_values!(data, shunt_results)
+        end
+    end
+
+    estimated_branch_length = JSON.parsefile(estimated_branch_length)
+    estim_lc = CSV.read(estimated_linecode, _DF.DataFrame, ntasks = 1)
+    estimated_linecode = CSV.File(estimated_linecode)
+    estim_lc.r_est = eval.(Meta.parse.(estimated_linecode.r_est))
+    estim_lc.x_est = eval.(Meta.parse.(estimated_linecode.x_est))
+    
+    linecode_dict = Dict(row["linecode_name"] => Dict(
+        "xs"   => row["x_est"],
+        "rs"   => row["r_est"])
+        for row in eachrow(estim_lc)
+    )
+
+    estimated_data = deepcopy(data)
+
+    for (b,branch) in estimated_data["branch"]
+        linecode = linecode_dict[eng["line"][branch["name"]]["linecode"]]
+        branch["br_r"] = linecode["rs"].*estimated_branch_length[b]["length_est"]./(z_pu*1000)
+        branch["br_x"] = linecode["xs"].*estimated_branch_length[b]["length_est"]./(z_pu*1000)
+    end
+    if oh_or_ug == "oh"
+        add_estimated_shunt_values!(estimated_data, shunt_results)
+    end
+
+    for (ts_id, ts) in enumerate(validation_timesteps)
+        
+        _IMP.insert_profiles!(data, profiles, ts, power_mult=power_mult)
+        _IMP.insert_profiles!(estimated_data, profiles, ts, power_mult=power_mult)
+
+        real_pf_results = _PMD.solve_mc_opf(data, _PMD.IVRENPowerModel, pf_solver)
+        est_pf_results = _PMD.solve_mc_opf(estimated_data, _PMD.IVRENPowerModel, pf_solver)
+        
+        # converts vr and vi to vm (phase to neutral)
+        _IMP.pf_solution_to_voltage_magnitudes!(real_pf_results) 
+        _IMP.pf_solution_to_voltage_magnitudes!(est_pf_results) 
+        _IMP.pf_solution_to_voltage_angles!(real_pf_results)
+        _IMP.pf_solution_to_voltage_angles!(est_pf_results)
+
+        push!(real_volts, vcat([real_pf_results["solution"]["bus"]["$(load["load_bus"])"]["vm"][1] for (l,load) in data["load"]], [ts, real_pf_results["termination_status"]]))
+        push!(est_volts, vcat([est_pf_results["solution"]["bus"]["$(load["load_bus"])"]["vm"][1] for (l,load) in data["load"]], [ts, est_pf_results["termination_status"]]))
+        push!(real_va, vcat([real_pf_results["solution"]["bus"]["$(load["load_bus"])"]["va"][1] for (l,load) in data["load"]], [ts, real_pf_results["termination_status"]]))
+        push!(est_va, vcat([est_pf_results["solution"]["bus"]["$(load["load_bus"])"]["va"][1] for (l,load) in data["load"]], [ts, est_pf_results["termination_status"]]))
+
+    end
+
+    CSV.write(result_path*"/pf_validation_real_vm"*extra_id*".csv", real_volts)
+    CSV.write(result_path*"/pf_validation_est_vm"*extra_id*".csv" ,  est_volts)
+    CSV.write(result_path*"/pf_validation_real_va"*extra_id*".csv", real_va)
+    CSV.write(result_path*"/pf_validation_est_va"*extra_id*".csv" ,  est_va)
+end
