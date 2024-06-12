@@ -11,6 +11,8 @@
 ! Impedance transformations described in 
 !   'Computational Analysis of Impedance Transformations for Four-Wire Power Networks with Sparse Neutral Grounding', Frederik Geth, Rahmat Heidarihaei, Arpan Koirala, submitted to ACM E-energy 2022.
 
+! Note that the above refer to the .dss files as available in this repository. For the paper's case studies, different profiles and impedances are used, see the Readme.md
+
 Clear
 Set DefaultBaseFreq=50
 New Circuit.ENWL_network_5_Feeder_4_4wire BasekV=0.416 pu=1.00 ISC3=100000 ISC1=100000
