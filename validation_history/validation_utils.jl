@@ -68,7 +68,7 @@ end
 
 function set_up_validation_series(;power_mult::Float64 = 25., t_start::Int=1, t_end::Int=16)
 
-    profiles_df = CSV.read(joinpath(_IMP.DATA_DIR, "nrel_profiles.csv"), _DF.DataFrame,  ntasks = 1)
+    profiles_df = CSV.read(joinpath(_IMP.DATA_DIR, "profiles.csv"), _DF.DataFrame,  ntasks = 1)
 
     ntw_path = joinpath(_IMP.DATA_DIR, "opendss/small_validation_case/Master.dss")
     eng = _PMD.parse_file(ntw_path, transformations=[_PMD.transform_loops!,_PMD.remove_all_bounds!]) # note that after this the impedances in linecodes are in Ω/m
@@ -143,7 +143,7 @@ end
 
 function set_up_validation_shunt(;power_mult::Float64 = 25., t_start::Int=1, t_end::Int=16)
 
-    profiles_df = CSV.read(joinpath(_IMP.DATA_DIR, "nrel_profiles.csv"), _DF.DataFrame,  ntasks = 1)
+    profiles_df = CSV.read(joinpath(_IMP.DATA_DIR, "profiles.csv"), _DF.DataFrame,  ntasks = 1)
 
     ntw_path = joinpath(_IMP.DATA_DIR, "opendss/small_validation_case/Master.dss")
     eng = _PMD.parse_file(ntw_path, transformations=[_PMD.transform_loops!,_PMD.remove_all_bounds!]) # note that after this the impedances in linecodes are in Ω/m

@@ -10,7 +10,7 @@ include("utils.jl")
 
 general_result_path = raw"C:\Users\mvanin\OneDrive - KU Leuven\Desktop\repos\DataDrivenImpedanceEstimationWithCarson\results_ma27"
 pf_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 100., "print_level"=>0, "hsllib"=> HSL_jll.libhsl_path, "linear_solver" => "ma27")
-profiles = CSV.read(_IMP.DATA_DIR*"/nrel_profiles.csv", _DF.DataFrame, ntasks = 1)
+profiles = CSV.read(_IMP.DATA_DIR*"/profiles.csv", _DF.DataFrame, ntasks = 1)
 validation_timesteps = find_most_loaded_timesteps(profiles, 400)[201:end]
 
 ########################################################################

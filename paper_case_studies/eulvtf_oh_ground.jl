@@ -9,7 +9,7 @@ import HSL_jll
 include("utils.jl")
 
 ie_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 3600., "max_iter" => 8000,  "hsllib"=> HSL_jll.libhsl_path, "linear_solver" => "ma27")
-profiles = CSV.read(_IMP.DATA_DIR*"/nrel_profiles.csv", _DF.DataFrame, ntasks = 1)
+profiles = CSV.read(_IMP.DATA_DIR*"/profiles.csv", _DF.DataFrame, ntasks = 1)
 pf_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 200., "print_level" => 0, "hsllib"=> HSL_jll.libhsl_path, "linear_solver" => "ma27" )
 
 timestep_set = find_most_loaded_timesteps(profiles, 200)

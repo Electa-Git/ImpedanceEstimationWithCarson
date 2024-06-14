@@ -574,7 +574,7 @@ branch_length_plots(general_result_path, "eulvtf_oh")
 
 function branch_length_plots(general_result_path::String, case::String; power_mult::Float64=1.0)
 
-    profiles = CSV.read(_IMP.DATA_DIR*"/nrel_profiles.csv", _DF.DataFrame, ntasks = 1)[1:2,:]
+    profiles = CSV.read(_IMP.DATA_DIR*"/profiles.csv", _DF.DataFrame, ntasks = 1)[1:2,:]
     oh_or_ug = occursin("oh", case) ? "oh" : "ug"
     feeder_name = occursin("30", case) ? "30load-feeder" : "eulvtf"
 
