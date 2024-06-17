@@ -35,9 +35,10 @@ This project results from a collaboration between KU Leuven/EnergyVille (Leuven 
 
 This work received funding from the Agency for Innovation and Entrepreneurship of the Flemish Government (VLAIO) and Flux50, through the strategic research project IMPRO-CAP (Grant N°. HBC 2022 0733).
 
+This work was also supported by the Australian Department of Climate Change, Energy, the Environment and Water under the International Clean Innovation Researcher Networks (ICIRN) program grant number ICIRN000072 
+
 The collaboration involved a long overseas stay that received a grant from the Science Foundation: Flanders (FWO) (Grant N°. V420224N).
 
-**XXXXXX project @rahmat to fill in from CSIRO, Fred also adds something?**. 
 
 <img src="./assets/readme/ku_leuven_logo.png" alt="KULeuven" height="120" width="300"/>
 <img src="./assets/readme/ENERGYVILLE-ICOON.png" alt="EnergyVille" height="120" width="120"/>
