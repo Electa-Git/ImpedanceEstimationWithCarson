@@ -1,6 +1,13 @@
 import DataFrames as _DF
 import Random as _RAN
 
+"""
+Adds length bounds to all branches in the multinetwork (i.e., multiperiod) 
+dictionary `mn_data`. This dictionary must have been previously provided with an entry "orig_length"
+(for each branch) that contains the actual length of each branch. To these, `length_bounds_percval`
+are added/subtracted to obtain the upper/lower bound of the length variables.
+`length_bounds_percval` is a percentage cast as a float between 0 and 1.
+"""
 function add_length_bounds!(mn_data::Dict, length_bounds_percval::Float64)
     for (_, branch) in mn_data["nw"]["1"]["branch"]
         branch["l_min"] = branch["orig_length"]*(1-length_bounds_percval)/1000 # / 1000 because length data is in m but length var is in km
@@ -8,8 +15,15 @@ function add_length_bounds!(mn_data::Dict, length_bounds_percval::Float64)
     end
     return mn_data
 end
-
-function add_material_properties_for_ug_noshunt_eulvtf!(mn_data, eng)
+"""
+Adds material properties for the underground test case with the European test feeder.
+No neutral grounding considered (so this function sets "imp_grounded" to `false` at all buses).
+The properties consist of material constants, that depend on the cable used.
+Branch to cable type assignment are performed prior to this.
+This function adjusts the number of wires of each branch: sets them to 2 or 4 depending on whether
+it is a service cable or a main feeder cable.
+"""
+function add_material_properties_for_ug_noshunt_eulvtf!(mn_data::Dict, eng::Dict)
     
     material_resist_dict = Dict(
         "ugsc_25cu_xlpe/nyl/pvc_ug_2w_bundled" => 26.210307508899646,
@@ -322,7 +336,10 @@ function make_all_branches_untrustworthy!(mn_data, eng)
     end
     return mn_data
 end
-
+"""
+Fins the N timesteps (`nr_timesteps`) with the highest total power injections from the
+`profiles` dataframe
+"""
 function find_most_loaded_timesteps(profiles::_DF.DataFrame, nr_timesteps::Int)
     sorted_df = sort(
         _DF.DataFrame(idx = 1:size(profiles)[1], val = sum(eachcol(profiles))),

@@ -123,7 +123,9 @@ function get_active_connections(pm::_PMD.AbstractUnbalancedPowerModel, nw::Int, 
    end
    return active_conn
 end
-
+"""
+Constraint that ensures that Kirchhoff's current law holds at every bus
+"""
 function constraint_mc_current_balance(pm::_PMD.AbstractUnbalancedPowerModel, i::Int; nw::Int=_IM.nw_id_default)
 
     bus = _PMD.ref(pm, 1, :bus, i)
@@ -184,7 +186,13 @@ function constraint_mc_current_balance(pm::_PMD.AbstractUnbalancedPowerModel, i:
     end
 end
 """
-Length is excluded, that's added sperately for each branch
+Constraint that builds Carson's nominal impedance expressions.
+The assumptions are the same as the paper's: material properties are constant.
+The expressions depend on which degree of domain knowledge is given, which is established in the 
+powermodelsdistribution's object `pm`, which imports the information from the data dictionary.
+If `exploit_horizontality` is `true`, we are exploiting domain knowledge as in `\mathcal{G} rest.` in the paper (for OH lines)
+If `exploit_squaredness` is `true`, we are exploiting domain knowledge as in `\mathcal{G} rest.` in the paper (for cables)
+If neither is true, generic Carson's eq. are used (`No restr.` case in the paper).
 """
 function carson_impedance_expressions(pm::_PMD.AbstractExplicitNeutralIVRModel)
 
@@ -281,7 +289,9 @@ function carson_impedance_expressions(pm::_PMD.AbstractExplicitNeutralIVRModel)
 
     end
 end
-
+"""
+Multiconductor Ohm's law constraint, enforced at every branch.
+"""
 function constraint_mc_bus_voltage_drop(pm::_PMD.AbstractExplicitNeutralIVRModel, i::Int; nw::Int=_PMD.nw_id_default)
 
     # get all info and cars that do not depend on impedance construction
@@ -324,7 +334,10 @@ function constraint_mc_bus_voltage_drop(pm::_PMD.AbstractExplicitNeutralIVRModel
     JuMP.@constraint(pm.model, vi_to .== vi_fr - R*ci_fr - X*cr_fr)
 
 end
-
+"""
+Because there are no line shunts, we enforce that the current entering and leaving 
+each line should be the same.
+"""
 function constraint_mc_current_from_to(pm::_PMD.AbstractExplicitNeutralIVRModel, i::Int; nw::Int=_IM.nw_id_default)
     
     branch = _PMD.ref(pm, nw, :branch, i)

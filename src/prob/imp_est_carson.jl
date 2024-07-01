@@ -1,3 +1,7 @@
+"""
+Calling this function on a data dictionary and given a certain solver, e.g., ipopt (attributes need to be included),
+builds and solves the joint state and impedance estimation problem with the provided data and solver.
+"""
 function solve_imp_est_carson(data, solver)
     _PMD.solve_mc_model(data, _PMD.IVRQuadraticENPowerModel, solver, build_imp_est_carson, multinetwork=true)
 end

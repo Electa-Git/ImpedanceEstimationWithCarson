@@ -1,3 +1,8 @@
+################################################
+### This file defines the variables of the problem
+### that do NOT relate to impedances, i.e., currents and residuals.
+################################################
+
 """
 Variable that defines the residuals that end up in the objective function.
     Unfortunately cannot get rid of these because we need them as auxiliary vars to relax

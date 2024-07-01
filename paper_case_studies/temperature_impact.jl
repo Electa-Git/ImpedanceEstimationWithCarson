@@ -1,3 +1,9 @@
+##################################################
+### This script analyzes the impact of 
+### temperature on steady-state self-resistances
+### with Carson's equations, and generates the
+### picture featured in our journal paper
+###################################################
 import StatsPlots as _SP
 using LaTeXStrings
 

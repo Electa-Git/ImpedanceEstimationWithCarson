@@ -1,3 +1,9 @@
+################################################
+### This file defines the variables of the problem
+### that are related to impedances, in function of line / cable geomtrical properties,
+### i.e., through Carson's equations.
+################################################
+
 """
 Carson's equations give nominal impedances in Ω/km. This variable multiplies them to get the Ω (in per unit though).
 So the value of this variable is in km!!

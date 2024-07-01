@@ -1,3 +1,9 @@
+##############################################################################
+### This file contains plotting functions that would                         
+### recreate the papers' figures.
+### The functions in this file are not particularly efficient / clean, sorry.
+##############################################################################
+
 import StatsPlots as _SP
 using LaTeXStrings
 import CSV
@@ -637,67 +643,6 @@ end
 
 shunt_plots_scatter(general_result_path, "30l_oh")
 shunt_plots_scatter(general_result_path, "eulvtf_oh")
-
-######### BOXPLOT MEANINGLESS IN THIS CASE, BUT KEPT FOR JUST IN CASE...
-# function shunt_plots_box(general_result_path::String, case::String; power_mult::Float64=1.0)
-
-#     p = _SP.plot(legend=false, ylabel = L"(\textrm{g}^{\textrm{sh,true}} - \textrm{g}^{\textrm{sh,est}})/\textrm{g}^{\textrm{sh,true}} \times 100 [\%]", xtickfontsize=13,ytickfontsize=12, ylabelfontsize=14, legendfontsize=12)
-#     p_ab = _SP.plot(legend=false, ylabel = L"(|\textrm{g}^{\textrm{sh,true}} - \textrm{g}^{\textrm{sh,est}}|)/\textrm{g}^{\textrm{sh,true}} \times 100 [\%]", xtickfontsize=13,ytickfontsize=12, ylabelfontsize=14, legendfontsize=12)
-#     q = _SP.plot(legend=false, ylabel = L"[\Omega]", xtickfontsize=13,ytickfontsize=12, ylabelfontsize=14, legendfontsize=12)
-#     #ylabel=L"\textrm{Relative} \, \, \textrm{error} \, \, [\%]"
-
-#     folders = [f for f in readdir(general_result_path) if occursin(case, f)]
-
-#     legend_filenames = []
-#     xposition = 1
-#     for folder in folders
-#         if occursin("no_restriction", folder) push!(legend_filenames, L"\textrm{No  \, \, rest.}") end
-#         if occursin("most_restricted", folder) push!(legend_filenames, L"A_p+\mathcal{G}  \, \, \textrm{rest.}") end
-#         if occursin("cross", folder) push!(legend_filenames, L"A_p  \, \, \textrm{rest.}") end
-#         if (occursin("horizontal", folder) || occursin("square", folder)) push!(legend_filenames, L"\mathcal{G}  \, \, \textrm{rest.}") end
-#         if isdir(joinpath(general_result_path, folder))
-#             for file in readdir(joinpath(general_result_path, folder))
-#                 if occursin("ground__shunts", file) && occursin("power_mult_$(power_mult)", file)
-#                     dict = JSON.parsefile(joinpath(general_result_path, folder, file))
-#                     shunt_est  = []
-#                     shunt_true = []
-#                     for (_, sh) in dict
-#                         push!(shunt_est, sh["shunt_est"]["gs"])
-#                         push!(shunt_true, sh["shunt_true"]["gs"])
-#                     end
-#                     perc_err = (shunt_true.-shunt_est)./shunt_true*100
-#                     for (i, e) in enumerate(perc_err)
-#                         if e == 0
-#                             perc_err[i]+=0.01
-#                         end
-#                     end
-#                     # p = _SP.boxplot!(p, [xposition], perc_err, yscale = :log10,
-#                     #  color="lightgrey", legend = false)
-#                     # p = _SP.dotplot!(p, [xposition], perc_err, color="grey", legend=false)
-#                     p_ab = _SP.boxplot!(p_ab, [xposition], abs.(perc_err),  yscale = :log10, 
-#                     color="lightgrey", legend = false)
-#                     p_ab = _SP.dotplot!(p_ab, [xposition], abs.(perc_err), color="grey", legend=false)
-#                     q = _SP.boxplot!(q, [xposition], (1 ./shunt_true .- 1 ./ shunt_est)*57.68533333333333, 
-#                         color="lightgrey", legend = false)
-#                     q = _SP.dotplot!(q, [xposition], (1 ./shunt_true .- 1 ./ shunt_est)*57.68533333333333, color="grey", legend=false)
-#                     xposition+=1
-#                 end
-#             end
-#         end
-#     end
-
-#     yticks = case == "eulvtf_oh" ? ([10, 25, 50, 100, 500, 1000], [L"%$i" for i in [10, 25, 50, 100, 500, 1000]]) : ([10, 25, 50, 100, 500, 1000], [L"%$i" for i in [10, 25, 50, 100, 500, 1000]])  
-#     # _SP.plot!(p, xticks = (1:4,legend_filenames[1:4]))
-#     # _SP.savefig(p, joinpath(general_result_path, "shunt_case_$(case)_power_mult_$(power_mult).png"))
-#     # _SP.savefig(p, joinpath(general_result_path, "shunt_case_$(case)_power_mult_$(power_mult).pdf"))
-#     _SP.plot!(p_ab, xticks = (1:4,legend_filenames[1:4]), yticks = yticks)
-#     _SP.savefig(p_ab, joinpath(general_result_path, "shunt_case_abs_$(case)_power_mult_$(power_mult).png"))
-#     _SP.savefig(p_ab, joinpath(general_result_path, "shunt_case_abs_$(case)_power_mult_$(power_mult).pdf"))
-#     _SP.plot!(q, xticks = (1:4,legend_filenames[1:4]))
-#     _SP.savefig(q, joinpath(general_result_path, "shunt_case_rev_$(case)_power_mult_$(power_mult).png"))
-#     _SP.savefig(q, joinpath(general_result_path, "shunt_case_rev_$(case)_power_mult_$(power_mult).pdf"))
-
-# end
 
 function shunt_plots_scatter(general_result_path::String, case::String; power_mult::Float64=1.0)
 
