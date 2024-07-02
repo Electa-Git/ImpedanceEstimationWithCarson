@@ -1,3 +1,5 @@
 **/Manifest.toml
 *.pdf
 *.png
+data/network_data/30load-feeder/*
+data/network_data/eulvtf/*

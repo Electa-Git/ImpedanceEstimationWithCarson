@@ -28,10 +28,6 @@ gmr_al = exp(-1/4)*sqrt.(A_al./pi)
 # y-axis
 R_cu(T::Int, mat::Dict, A::Float64) = 0.049348 + mat["Cu"]["ρ"]/(A/1E6) * (1+(mat["Cu"]["α"]*(T-20)))
 R_al(T::Int, mat::Dict, A::Float64) = 0.049348 + mat["Al-1350"]["ρ"]/(A/1E6) * (1+(mat["Al-1350"]["α"]*(T-20)))
-# X(A::Float64) = 0.062832*(log(1/( exp(-1/4)*sqrt(A/pi)*3.28084*1E-3 ))+8.0252)
-
-# Rdiff(R)    = (R65-R)/R65*100  
-# Zdiff(X, R) = (Z65-R)/R65*100
 
 Rdiff_cu(A,T) = (R_cu(T, materials, A)-R_cu(65, materials, A))/R_cu(65, materials, A)*100
 Rdiff_al(A,T) = (R_al(T, materials, A)-R_al(65, materials, A))/R_al(65, materials, A)*100
@@ -67,6 +63,3 @@ annotate!(80, -0.015, text(L"Cu, 141.03 mm^2", font, :black, 14))
 
 _SP.savefig(p, "temperature_impact.png")
 _SP.savefig(p, "temperature_impact.pdf")
-# for A in A_al
-#     _SP.plot!(T, [Rdiff_al(A,t) for t in T], linestyle = :dot, label = "$A")
-# end

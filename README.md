@@ -13,11 +13,12 @@ Keywords: impedance matrix estimation, parameter estimation, power systems state
 
 The source code is available under a BSD-3 license (see [LICENSE](LICENSE) file)
 
-The network, impedance and profile data used in this work can be found in the `data` folder.
+The impedance and profile data used in this work can be found in the `data` folder.
 
 - Yearly fifteen minute resolution active power profiles are a subset of the Open Energy Data Initiative’s (OEDI) dataset [“End-Use Load Profiles for the U.S. Building Stock”](https://data.openei.org/submissions/4520), and released with a CC BY 4.0 license, like the original OEDI active power profiles. See `data/Readme_profiles.md` to check how the subset has been chosen, and how reactive power profiles are added to the original data.
 - The linecode data for the impedances, curated by GridQube and found in `data/linecode_library`, are released under a CC-BY 4.0 license. 
-- The network data in `data/network_data` are in OpenDSS's (.dss) format and consist of the **four-wire** extension of Feeder 1, Network 1 and Feeder 5, Network 4 of the Electricity North West Limited (ENWL) [dataset](https://ieeexplore.ieee.org/iel7/59/4374138/07051294.pdf) from the [Low Voltage Network Solutions project](https://www.enwl.co.uk/go-net-zero/innovation/smaller-projects/low-carbon-networks-fund/low-voltage-network-solutions/).
+- The network data we used consist of the **four-wire** extension of Feeder 1, Network 1 and Feeder 5, Network 4 of the Electricity North West Limited (ENWL) [dataset](https://ieeexplore.ieee.org/iel7/59/4374138/07051294.pdf) from the [Low Voltage Network Solutions project](https://www.enwl.co.uk/go-net-zero/innovation/smaller-projects/low-carbon-networks-fund/low-voltage-network-solutions/). Because of the ambiguity of the ENWL dataset in terms of re-distributing the original data, we are not sharing the network data directly. Instructions on how to recreate the data are provided instead, see `Instructions to get the network data` below.
+
 
 Once available, we will put here links to our relevant paper/preprints **TBD**, [on arxiv](https://arxiv.org/).
 
@@ -64,7 +65,7 @@ This project results from a collaboration between KU Leuven/EnergyVille (Leuven 
 
 This work received funding from the Agency for Innovation and Entrepreneurship of the Flemish Government (VLAIO) and Flux50, through the strategic research project IMPRO-CAP (Grant N°. HBC 2022 0733).
 
-This work was also supported by the Australian Department of Climate Change, Energy, the Environment and Water under the International Clean Innovation Researcher Networks (ICIRN) program grant number ICIRN000072 
+This work was also supported by the Australian Department of Climate Change, Energy, the Environment and Water under the International Clean Innovation Researcher Networks (ICIRN) program grant number ICIRN000072. 
 
 The collaboration involved a long overseas stay that received a grant from the Science Foundation: Flanders (FWO) (Grant N°. V420224N).
 
@@ -73,3 +74,19 @@ The collaboration involved a long overseas stay that received a grant from the S
 <img src="./assets/readme/ENERGYVILLE-ICOON.png" alt="EnergyVille" height="120" width="120"/>
 <img src="./assets/readme/CSIRO-logo.png" alt="CSIRO" height="120" width="150"/>
 <img src="./assets/readme/improcap_logo.PNG" alt="Improcap" height="120" width="450"/>
+
+## Instructions to get the network data
+
+The easiest option is to ask us for the network data directly (see the GitHub profiles of the contributors for the emails).
+
+If you prefer to generate it on your own, or for some reason we are unresponsive (sorry), please do the following steps:
+
+1) Download the `LV network models` ZIP folder from the [ENWL website](https://www.enwl.co.uk/go-net-zero/innovation/smaller-projects/low-carbon-networks-fund/low-voltage-network-solutions/).
+
+2) Transfer the following files from Network 1, Feeder 1 in `data/network_data/eulvtf`:
+    - Loads.txt
+    - Lines.txt
+
+3) Do the same file transfer for Network 5, Feeder 4, in the `data/network_data/30load-feeder` folder.
+
+4) Run `create_enwl_4w_data()` from `data/generate_network_data.jl` to generate the data as used in our case studies.
