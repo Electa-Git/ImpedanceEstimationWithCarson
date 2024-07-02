@@ -11,8 +11,8 @@ Creates updated load files for both test networks
 """
 function create_loads_files()
 # Open the input text file
-    input_files  = [joinpath(@__DIR__, "orig_data", "eulvtf", "Loads.txt"),  joinpath(@__DIR__, "orig_data", "eulvtf", "Loads.txt")]
-    output_files = [joinpath(@__DIR__, "orig_data", "30load-feeder", "Loads2.txt"), joinpath(@__DIR__, "orig_data", "eulvtf", "Loads2.txt")]
+    input_files  = [joinpath(@__DIR__, "network_data", "30load-feeder", "Loads.txt"),  joinpath(@__DIR__, "network_data", "eulvtf", "Loads.txt")]
+    output_files = [joinpath(@__DIR__, "network_data", "30load-feeder", "Loads2.txt"), joinpath(@__DIR__, "network_data", "eulvtf", "Loads2.txt")]
 
     for (input_file, output_file) in zip(input_files, output_files)
         # Read the input file line by line
@@ -59,7 +59,7 @@ function modify_line_lines(line::String, is_first_line::Bool, output_filename::S
         linecode = occursin("_ug", output_filename) ? "uglv_240al_xlpe/nyl/pvc_ug_4w_bundled" : "pluto"
     end
     
-    if line_num == 328 && occursin("30load", output_filename)
+    if line_num == 328 && occursin("30load", output_filename) && occursin("_ug", output_filename)
         bus1 = "322.1.2.3.4"
     else
         bus1 = "$(split(parts[3], "=")[end]).1.2.3.4"    
@@ -79,10 +79,10 @@ end
 Creates `Lines_oh.txt` and `Lines_ug.txt` for both test cases
 """
 function create_lines_files()
-    input_files  = [joinpath(@__DIR__, "orig_data", "30load-feeder", "Lines.txt"),  joinpath(@__DIR__, "orig_data", "eulvtf", "Lines.txt")]
+    input_files  = [joinpath(@__DIR__, "network_data", "30load-feeder", "Lines.txt"),  joinpath(@__DIR__, "network_data", "eulvtf", "Lines.txt")]
 
     for case in ["_ug", "_oh"]
-        output_files = [joinpath(@__DIR__, "orig_data", "30load-feeder", "Lines$case.txt"), joinpath(@__DIR__, "orig_data", "eulvtf", "Lines$case.txt")]
+        output_files = [joinpath(@__DIR__, "network_data", "30load-feeder", "Lines$case.txt"), joinpath(@__DIR__, "network_data", "eulvtf", "Lines$case.txt")]
         for (input_file, output_file) in zip(input_files, output_files)
             # Read the input file line by line
             lines = readlines(input_file)
@@ -90,7 +90,7 @@ function create_lines_files()
             # Open the output file for writing
             open(output_file, "w") do io
                 write(io, "! Imported from Lines.txt, with modified linecodes\n")
-                if occursin("30load", output_file)
+                if occursin("30load", output_file) && occursin("_ug", output_file) 
                     write(io, "! WARNING! change w.r.t. original ENWL data: line328 is from bus 322 to 329 instead of 326 to 329!!!\n")
                 end
                 write(io, "! ---------------------------------------------------------------------------\n")
@@ -108,8 +108,8 @@ end
 Creates master files for all four cases
 """
 function create_master_files()
-    output_files = [joinpath(@__DIR__, "orig_data", "30load-feeder", "Master_oh.dss"), joinpath(@__DIR__, "orig_data", "30load-feeder", "Master_ug.dss"),
-                    joinpath(@__DIR__, "orig_data", "eulvtf", "Master_oh.dss"), joinpath(@__DIR__, "orig_data", "eulvtf", "Master_ug.dss")]
+    output_files = [joinpath(@__DIR__, "network_data", "30load-feeder", "Master_oh.dss"), joinpath(@__DIR__, "network_data", "30load-feeder", "Master_ug.dss"),
+                    joinpath(@__DIR__, "network_data", "eulvtf", "Master_oh.dss"), joinpath(@__DIR__, "network_data", "eulvtf", "Master_ug.dss")]
     
     common_header = """! Original network and loads data from ENWL - Low Voltage Network Solutions project (in OpenDSS format)
                       !   https://www.enwl.co.uk/go-net-zero/innovation/smaller-projects/low-carbon-networks-fund/low-voltage-network-solutions/ 
