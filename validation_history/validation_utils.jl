@@ -141,11 +141,11 @@ function set_up_validation_series(;power_mult::Float64 = 25., t_start::Int=1, t_
     return mn_data
 end
 
-function set_up_validation_shunt(;power_mult::Float64 = 25., t_start::Int=1, t_end::Int=16)
+function set_up_validation_shunt(;power_mult::Float64 = 25.)
 
     profiles_df = CSV.read(joinpath(_IMP.DATA_DIR, "profiles.csv"), _DF.DataFrame,  ntasks = 1)
 
-    ntw_path = joinpath(_IMP.DATA_DIR, "opendss/small_validation_case/Master.dss")
+    ntw_path = raw"data/Master.dss"
     eng = _PMD.parse_file(ntw_path, transformations=[_PMD.transform_loops!,_PMD.remove_all_bounds!]) # note that after this the impedances in linecodes are in Ω/m
     _IMP.rm_enwl_transformer!(eng)
     _IMP.reduce_enwl_lines_eng!(eng)
@@ -175,7 +175,7 @@ function set_up_validation_shunt(;power_mult::Float64 = 25., t_start::Int=1, t_e
     # it runs a powerflow for each time step first, so it takes some time...
     
     pf_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 100., "print_level"=>0 )
-    mn_data = _IMP.build_multinetwork_dsse_data_with_shunts(data, profiles_df, pf_solver, σ_v, σ_d, σ_g; t_start=t_start, t_end=t_end, add_noise=false, power_mult = power_mult)
+    mn_data, real_volts, real_vas = _IMP.build_multinetwork_dsse_data_with_shunts(data, profiles_df, pf_solver, add_noise=false, power_mult = power_mult)
         
     z_pu = (data["settings"]["voltage_scale_factor"]*data["settings"]["vbases_default"]["3"])^2/(data["settings"]["power_scale_factor"])
     T = 55
@@ -206,6 +206,18 @@ function make_all_branches_untrustworthy!(mn_data, eng)
     return mn_data
 end
 
+function make_all_branches_trustworthy!(mn_data, eng)
+    for (k, val) in mn_data["nw"]["1"]["linecode_map"]
+        for (b, branch) in mn_data["nw"]["1"]["branch"] 
+            branch["untrustworthy_branch"] = false 
+            if eng["line"][branch["name"]]["linecode"] == val["name"]
+                branch["orig_linecode"] = val["name"]
+                branch["linecode_id"] = k
+            end
+        end
+    end
+    return mn_data
+end
 
 function carson_constants()
     c₁ = 3.28084e-3
