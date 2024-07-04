@@ -190,8 +190,8 @@ Constraint that builds Carson's nominal impedance expressions.
 The assumptions are the same as the paper's: material properties are constant.
 The expressions depend on which degree of domain knowledge is given, which is established in the 
 powermodelsdistribution's object `pm`, which imports the information from the data dictionary.
-If `exploit_horizontality` is `true`, we are exploiting domain knowledge as in `\mathcal{G} rest.` in the paper (for OH lines)
-If `exploit_squaredness` is `true`, we are exploiting domain knowledge as in `\mathcal{G} rest.` in the paper (for cables)
+If `exploit_horizontality` is `true`, we are exploiting domain knowledge as in `\\mathcal{G} rest.` in the paper (for OH lines)
+If `exploit_squaredness` is `true`, we are exploiting domain knowledge as in `\\mathcal{G} rest.` in the paper (for cables)
 If neither is true, generic Carson's eq. are used (`No restr.` case in the paper).
 """
 function carson_impedance_expressions(pm::_PMD.AbstractExplicitNeutralIVRModel)
