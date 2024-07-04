@@ -1,9 +1,3 @@
-#####################################################################################
-#### THIS ONE TESTS THE CASE IN WHICH WE HAVE 
-#### SHUNT GROUNDING IN THE DATA, BUT NO VARIABLE
-#### TO DESCRIBE IT IN THE OPTIMIZATION PROBLEM
-#####################################################################################
-
 import DataDrivenImpedanceEstimationWithCarson as _IMP
 import CSV
 import DataFrames as _DF
@@ -29,8 +23,6 @@ function run_impedance_estimation_oh_nogroundvar_eulvtf(result_path::String, ie_
 
     data, eng = build_linecode_for_oh_ground_eulvtf(data, eng, z_pu) # assigns the set of linecodes we elected for this case and builds R,X
 
-    mn_data, real_volts, real_vas = _IMP.build_multinetwork_dsse_data(data, profiles, pf_solver; timestep_set = timestep_set, add_noise=add_meas_noise, seed = scenario_id, power_mult = power_mult)
-
     loads_with_shunts = [l for (l,load) in data["load"]][1:25]
     buses_with_shunts = [data["load"][l]["load_bus"] for l in loads_with_shunts]
     gs = _RAN.rand(z_pu./[10., 20., 30., 40., 50., 60., 70., 80.], 25)
@@ -44,17 +36,25 @@ function run_impedance_estimation_oh_nogroundvar_eulvtf(result_path::String, ie_
     if use_length_bounds add_length_bounds!(mn_data, length_bounds_percval) end
 
     ### -- ONLY DIFFERENCE WITH THE CASE THE DOES HAVE THE NEUTRAL SHUNT VARIABLE -- ###
-    case = "eulvtf_oh_ground_"
+    case1 = "eulvtf_oh_"
+    case2 = "eulvtf_oh_nogroundvar_"
 
-    for (b,bus) in mn_data["nw"]["1"]["bus"]
-        bus["imp_grounded"] = fill(false, length(bus["terminals"]))
-    end 
+    mn_data_ng = deepcopy(mn_data)
+
+    for (n,nw) in mn_data_ng["nw"]
+        empty!(nw["shunt"])
+        for (b,bus) in nw["bus"]
+            bus["imp_grounded"] = fill(false, length(bus["terminals"]))
+        end
+    end
+ 
     ####################################################################################
 
     ##########################################################
     #### CASE #1: constrain both layout and cross-section ####
     ##########################################################
 
+    mn_data["nw"]["1"]["settings"]["shunt_resistive"] = shunt_resistive
     mn_data["nw"]["1"]["settings"]["z_pu"] = z_pu
     mn_data["nw"]["1"]["settings"]["exploit_horizontality"] = true
     mn_data["nw"]["1"]["settings"]["exploit_equal_crossection"] = true
@@ -66,6 +66,28 @@ function run_impedance_estimation_oh_nogroundvar_eulvtf(result_path::String, ie_
     mn_data["nw"]["1"]["rho"] = Dict()
     mn_data["nw"]["1"]["alpha"] = Dict()
 
+    mn_data_ng["nw"]["1"]["settings"]["shunt_resistive"] = shunt_resistive
+    mn_data_ng["nw"]["1"]["settings"]["z_pu"] = z_pu
+    mn_data_ng["nw"]["1"]["settings"]["exploit_horizontality"] = true
+    mn_data_ng["nw"]["1"]["settings"]["exploit_equal_crossection"] = true
+    mn_data_ng["nw"]["1"]["settings"]["exploit_squaredness"] = false
+    mn_data_ng["nw"]["1"]["settings"]["oh_or_ug"] = "oh"
+    mn_data_ng["nw"]["1"]["settings"]["rescaler"] = 100.
+    mn_data_ng["nw"]["1"]["settings"]["mu_rel"] = 1.
+    mn_data_ng["nw"]["1"]["temperature"] = Dict()
+    mn_data_ng["nw"]["1"]["rho"] = Dict()
+    mn_data_ng["nw"]["1"]["alpha"] = Dict()
+
+    sol_ng = _IMP.solve_imp_est_carson(mn_data_ng, ie_solver)
+    sol_ng = _IMP.build_rx_sol_dict(mn_data_ng, sol_ng) # completes solution information getting together things that are not reported by default
+    imp_est_ng  = _IMP.get_cumulative_impedance_of_loads_from_sol(mn_data_ng, sol_ng, false)
+    imp_true_ng = _IMP.get_cumulative_impedance_of_loads_from_data(mn_data_ng, true)
+
+    est_volts_ng = _IMP.build_estimated_volts_dataframe(sol_ng, mn_data_ng, scenario_id)
+    est_vas_ng = _IMP.build_estimated_vas_dataframe(sol_ng, mn_data_ng, scenario_id)
+
+    _IMP.drop_results(case2, result_path*"/eulvtf_oh_noground_most_restricted/", "_power_mult_$(power_mult)_", [], sol_ng, mn_data_ng, timestep_set, scenario_id, add_meas_noise, power_mult, false, false, false, use_length_bounds, length_bounds_percval, imp_est_ng, imp_true_ng, real_volts, real_vas, est_volts_ng, est_vas_ng, mn_data_ng["nw"]["1"]["settings"]["exploit_equal_crossection"], mn_data_ng["nw"]["1"]["settings"]["exploit_squaredness"], mn_data_ng["nw"]["1"]["settings"]["exploit_horizontality"])
+    
     sol = _IMP.solve_imp_est_carson(mn_data, ie_solver)
     sol = _IMP.build_rx_sol_dict(mn_data, sol) # completes solution information getting together things that are not reported by default
     imp_est  = _IMP.get_cumulative_impedance_of_loads_from_sol(mn_data, sol, false)
@@ -74,13 +96,14 @@ function run_impedance_estimation_oh_nogroundvar_eulvtf(result_path::String, ie_
     est_volts = _IMP.build_estimated_volts_dataframe(sol, mn_data, scenario_id)
     est_vas = _IMP.build_estimated_vas_dataframe(sol, mn_data, scenario_id)
 
-    _IMP.drop_results(case, result_path*"/eulvtf_oh_noground_most_restricted/", "_power_mult_$(power_mult)_", [], sol, mn_data, timestep_set, scenario_id, add_meas_noise, power_mult, false, false, false, use_length_bounds, length_bounds_percval, imp_est, imp_true, real_volts, real_vas, est_volts, est_vas, mn_data["nw"]["1"]["settings"]["exploit_equal_crossection"], mn_data["nw"]["1"]["settings"]["exploit_squaredness"], mn_data["nw"]["1"]["settings"]["exploit_horizontality"])
-    # _IMP.drop_shunt_results(case, result_path*"/eulvtf_oh_noground_most_restricted/", "_power_mult_$(power_mult)_", sol, mn_data, scenario_id, shunt_resistive)
+    _IMP.drop_results(case1, result_path*"/eulvtf_oh_most_restricted/", "_power_mult_$(power_mult)_", [], sol, mn_data, timestep_set, scenario_id, add_meas_noise, power_mult, false, false, false, use_length_bounds, length_bounds_percval, imp_est, imp_true, real_volts, real_vas, est_volts, est_vas, mn_data["nw"]["1"]["settings"]["exploit_equal_crossection"], mn_data["nw"]["1"]["settings"]["exploit_squaredness"], mn_data["nw"]["1"]["settings"]["exploit_horizontality"])
+    _IMP.drop_shunt_results(case1, result_path*"/eulvtf_oh_most_restricted/", "_power_mult_$(power_mult)_", sol, mn_data, scenario_id, shunt_resistive)
 
     ##########################################################
          #### CASE #2: constrain only cross-section ####
     ##########################################################
 
+    mn_data["nw"]["1"]["settings"]["shunt_resistive"] = shunt_resistive
     mn_data["nw"]["1"]["settings"]["z_pu"] = z_pu
     mn_data["nw"]["1"]["settings"]["exploit_horizontality"] = false 
     mn_data["nw"]["1"]["settings"]["exploit_equal_crossection"] = true
@@ -92,6 +115,28 @@ function run_impedance_estimation_oh_nogroundvar_eulvtf(result_path::String, ie_
     mn_data["nw"]["1"]["rho"] = Dict()
     mn_data["nw"]["1"]["alpha"] = Dict()
 
+    mn_data_ng["nw"]["1"]["settings"]["shunt_resistive"] = shunt_resistive
+    mn_data_ng["nw"]["1"]["settings"]["z_pu"] = z_pu
+    mn_data_ng["nw"]["1"]["settings"]["exploit_horizontality"] = false 
+    mn_data_ng["nw"]["1"]["settings"]["exploit_equal_crossection"] = true
+    mn_data_ng["nw"]["1"]["settings"]["exploit_squaredness"] = false
+    mn_data_ng["nw"]["1"]["settings"]["oh_or_ug"] = "oh"
+    mn_data_ng["nw"]["1"]["settings"]["rescaler"] = 100.
+    mn_data_ng["nw"]["1"]["settings"]["mu_rel"] = 1.
+    mn_data_ng["nw"]["1"]["temperature"] = Dict()
+    mn_data_ng["nw"]["1"]["rho"] = Dict()
+    mn_data_ng["nw"]["1"]["alpha"] = Dict()
+
+    sol_ng = _IMP.solve_imp_est_carson(mn_data_ng, ie_solver)
+    sol_ng = _IMP.build_rx_sol_dict(mn_data_ng, sol_ng) # completes solution information getting together things that are not reported by default
+    imp_est_ng  = _IMP.get_cumulative_impedance_of_loads_from_sol(mn_data_ng, sol_ng, false)
+    imp_true_ng = _IMP.get_cumulative_impedance_of_loads_from_data(mn_data_ng, true)
+
+    est_volts_ng = _IMP.build_estimated_volts_dataframe(sol_ng, mn_data_ng, scenario_id)
+    est_vas_ng = _IMP.build_estimated_vas_dataframe(sol_ng, mn_data_ng, scenario_id)
+
+    _IMP.drop_results(case2, result_path*"/eulvtf_oh_noground_cross_only/", "_power_mult_$(power_mult)_", [], sol_ng, mn_data_ng, timestep_set, scenario_id, add_meas_noise, power_mult, false, false, false, use_length_bounds, length_bounds_percval, imp_est_ng, imp_true_ng, real_volts, real_vas, est_volts_ng, est_vas_ng, mn_data_ng["nw"]["1"]["settings"]["exploit_equal_crossection"], mn_data_ng["nw"]["1"]["settings"]["exploit_squaredness"], mn_data_ng["nw"]["1"]["settings"]["exploit_horizontality"])
+    
     sol = _IMP.solve_imp_est_carson(mn_data, ie_solver)
     sol = _IMP.build_rx_sol_dict(mn_data, sol) # completes solution information getting together things that are not reported by default
     imp_est  = _IMP.get_cumulative_impedance_of_loads_from_sol(mn_data, sol, false)
@@ -100,13 +145,14 @@ function run_impedance_estimation_oh_nogroundvar_eulvtf(result_path::String, ie_
     est_volts = _IMP.build_estimated_volts_dataframe(sol, mn_data, scenario_id)
     est_vas = _IMP.build_estimated_vas_dataframe(sol, mn_data, scenario_id)
 
-    _IMP.drop_results(case, result_path*"/eulvtf_oh_noground_cross_only/", "_power_mult_$(power_mult)_", [], sol, mn_data, timestep_set, scenario_id, add_meas_noise, power_mult, false, false, false, use_length_bounds, length_bounds_percval, imp_est, imp_true, real_volts, real_vas, est_volts, est_vas, mn_data["nw"]["1"]["settings"]["exploit_equal_crossection"], mn_data["nw"]["1"]["settings"]["exploit_squaredness"], mn_data["nw"]["1"]["settings"]["exploit_horizontality"])
-    # _IMP.drop_shunt_results(case, result_path*"/eulvtf_oh_noground_cross_only/", "_power_mult_$(power_mult)_", sol, mn_data, scenario_id, shunt_resistive)
+    _IMP.drop_results(case1, result_path*"/eulvtf_oh_cross_only/", "_power_mult_$(power_mult)_", [], sol, mn_data, timestep_set, scenario_id, add_meas_noise, power_mult, false, false, false, use_length_bounds, length_bounds_percval, imp_est, imp_true, real_volts, real_vas, est_volts, est_vas, mn_data["nw"]["1"]["settings"]["exploit_equal_crossection"], mn_data["nw"]["1"]["settings"]["exploit_squaredness"], mn_data["nw"]["1"]["settings"]["exploit_horizontality"])
+    _IMP.drop_shunt_results(case1, result_path*"/eulvtf_oh_cross_only/", "_power_mult_$(power_mult)_", sol, mn_data, scenario_id, shunt_resistive)
 
     ##########################################################
              #### CASE #3: constrain only layout ####
     ##########################################################
 
+    mn_data["nw"]["1"]["settings"]["shunt_resistive"] = shunt_resistive
     mn_data["nw"]["1"]["settings"]["z_pu"] = z_pu
     mn_data["nw"]["1"]["settings"]["exploit_horizontality"] = true
     mn_data["nw"]["1"]["settings"]["exploit_equal_crossection"] = false
@@ -118,6 +164,28 @@ function run_impedance_estimation_oh_nogroundvar_eulvtf(result_path::String, ie_
     mn_data["nw"]["1"]["rho"] = Dict()
     mn_data["nw"]["1"]["alpha"] = Dict()
 
+    mn_data_ng["nw"]["1"]["settings"]["shunt_resistive"] = shunt_resistive
+    mn_data_ng["nw"]["1"]["settings"]["z_pu"] = z_pu
+    mn_data_ng["nw"]["1"]["settings"]["exploit_horizontality"] = true
+    mn_data_ng["nw"]["1"]["settings"]["exploit_equal_crossection"] = false
+    mn_data_ng["nw"]["1"]["settings"]["exploit_squaredness"] = false
+    mn_data_ng["nw"]["1"]["settings"]["oh_or_ug"] = "oh"
+    mn_data_ng["nw"]["1"]["settings"]["rescaler"] = 100.
+    mn_data_ng["nw"]["1"]["settings"]["mu_rel"] = 1.
+    mn_data_ng["nw"]["1"]["temperature"] = Dict()
+    mn_data_ng["nw"]["1"]["rho"] = Dict()
+    mn_data_ng["nw"]["1"]["alpha"] = Dict()
+
+    sol_ng = _IMP.solve_imp_est_carson(mn_data_ng, ie_solver)
+    sol_ng = _IMP.build_rx_sol_dict(mn_data_ng, sol_ng) # completes solution information getting together things that are not reported by default
+    imp_est_ng  = _IMP.get_cumulative_impedance_of_loads_from_sol(mn_data_ng, sol_ng, false)
+    imp_true_ng = _IMP.get_cumulative_impedance_of_loads_from_data(mn_data_ng, true)
+
+    est_volts_ng = _IMP.build_estimated_volts_dataframe(sol_ng, mn_data_ng, scenario_id)
+    est_vas_ng = _IMP.build_estimated_vas_dataframe(sol_ng, mn_data_ng, scenario_id)
+
+    _IMP.drop_results(case2, result_path*"/eulvtf_oh_noground_horizontal_only/", "_power_mult_$(power_mult)_", [], sol_ng, mn_data_ng, timestep_set, scenario_id, add_meas_noise, power_mult, false, false, false, use_length_bounds, length_bounds_percval, imp_est_ng, imp_true_ng, real_volts, real_vas, est_volts_ng, est_vas_ng, mn_data_ng["nw"]["1"]["settings"]["exploit_equal_crossection"], mn_data_ng["nw"]["1"]["settings"]["exploit_squaredness"], mn_data_ng["nw"]["1"]["settings"]["exploit_horizontality"])
+
     sol = _IMP.solve_imp_est_carson(mn_data, ie_solver)
     sol = _IMP.build_rx_sol_dict(mn_data, sol) # completes solution information getting together things that are not reported by default
     imp_est  = _IMP.get_cumulative_impedance_of_loads_from_sol(mn_data, sol, false)
@@ -126,13 +194,14 @@ function run_impedance_estimation_oh_nogroundvar_eulvtf(result_path::String, ie_
     est_volts = _IMP.build_estimated_volts_dataframe(sol, mn_data, scenario_id)
     est_vas = _IMP.build_estimated_vas_dataframe(sol, mn_data, scenario_id)
 
-    _IMP.drop_results(case, result_path*"/eulvtf_oh_noground_horizontal_only/", "_power_mult_$(power_mult)_", [], sol, mn_data, timestep_set, scenario_id, add_meas_noise, power_mult, false, false, false, use_length_bounds, length_bounds_percval, imp_est, imp_true, real_volts, real_vas, est_volts, est_vas, mn_data["nw"]["1"]["settings"]["exploit_equal_crossection"], mn_data["nw"]["1"]["settings"]["exploit_squaredness"], mn_data["nw"]["1"]["settings"]["exploit_horizontality"])
-    # _IMP.drop_shunt_results(case, result_path*"/eulvtf_oh_noground_horizontal_only/", "_power_mult_$(power_mult)_", sol, mn_data, scenario_id, shunt_resistive)
+    _IMP.drop_results(case1, result_path*"/eulvtf_oh_horizontal_only/", "_power_mult_$(power_mult)_", [], sol, mn_data, timestep_set, scenario_id, add_meas_noise, power_mult, false, false, false, use_length_bounds, length_bounds_percval, imp_est, imp_true, real_volts, real_vas, est_volts, est_vas, mn_data["nw"]["1"]["settings"]["exploit_equal_crossection"], mn_data["nw"]["1"]["settings"]["exploit_squaredness"], mn_data["nw"]["1"]["settings"]["exploit_horizontality"])
+    _IMP.drop_shunt_results(case1, result_path*"/eulvtf_oh_horizontal_only/", "_power_mult_$(power_mult)_", sol, mn_data, scenario_id, shunt_resistive)
 
     ##########################################################
                  #### CASE #4: no constraints ####
     ##########################################################
 
+    mn_data["nw"]["1"]["settings"]["shunt_resistive"] = shunt_resistive
     mn_data["nw"]["1"]["settings"]["z_pu"] = z_pu
     mn_data["nw"]["1"]["settings"]["exploit_horizontality"] = false 
     mn_data["nw"]["1"]["settings"]["exploit_equal_crossection"] = false
@@ -144,6 +213,28 @@ function run_impedance_estimation_oh_nogroundvar_eulvtf(result_path::String, ie_
     mn_data["nw"]["1"]["rho"] = Dict()
     mn_data["nw"]["1"]["alpha"] = Dict()
 
+    mn_data_ng["nw"]["1"]["settings"]["shunt_resistive"] = shunt_resistive
+    mn_data_ng["nw"]["1"]["settings"]["z_pu"] = z_pu
+    mn_data_ng["nw"]["1"]["settings"]["exploit_horizontality"] = false 
+    mn_data_ng["nw"]["1"]["settings"]["exploit_equal_crossection"] = false
+    mn_data_ng["nw"]["1"]["settings"]["exploit_squaredness"] = false
+    mn_data_ng["nw"]["1"]["settings"]["oh_or_ug"] = "oh"
+    mn_data_ng["nw"]["1"]["settings"]["rescaler"] = 100.
+    mn_data_ng["nw"]["1"]["settings"]["mu_rel"] = 1.
+    mn_data_ng["nw"]["1"]["temperature"] = Dict()
+    mn_data_ng["nw"]["1"]["rho"] = Dict()
+    mn_data_ng["nw"]["1"]["alpha"] = Dict()
+
+    sol_ng = _IMP.solve_imp_est_carson(mn_data_ng, ie_solver)
+    sol_ng = _IMP.build_rx_sol_dict(mn_data_ng, sol_ng) # completes solution information getting together things that are not reported by default
+    imp_est_ng  = _IMP.get_cumulative_impedance_of_loads_from_sol(mn_data_ng, sol_ng, false)
+    imp_true_ng = _IMP.get_cumulative_impedance_of_loads_from_data(mn_data_ng, true)
+
+    est_volts_ng = _IMP.build_estimated_volts_dataframe(sol_ng, mn_data_ng, scenario_id)
+    est_vas_ng = _IMP.build_estimated_vas_dataframe(sol_ng, mn_data_ng, scenario_id)
+
+    _IMP.drop_results(case2, result_path*"/eulvtf_oh_noground_no_restriction/", "_power_mult_$(power_mult)_", [], sol_ng, mn_data_ng, timestep_set, scenario_id, add_meas_noise, power_mult, false, false, false, use_length_bounds, length_bounds_percval, imp_est_ng, imp_true_ng, real_volts, real_vas, est_volts_ng, est_vas_ng, mn_data_ng["nw"]["1"]["settings"]["exploit_equal_crossection"], mn_data_ng["nw"]["1"]["settings"]["exploit_squaredness"], mn_data_ng["nw"]["1"]["settings"]["exploit_horizontality"])
+
     sol = _IMP.solve_imp_est_carson(mn_data, ie_solver)
     sol = _IMP.build_rx_sol_dict(mn_data, sol) # completes solution information getting together things that are not reported by default
     imp_est  = _IMP.get_cumulative_impedance_of_loads_from_sol(mn_data, sol, false)
@@ -152,7 +243,6 @@ function run_impedance_estimation_oh_nogroundvar_eulvtf(result_path::String, ie_
     est_volts = _IMP.build_estimated_volts_dataframe(sol, mn_data, scenario_id)
     est_vas = _IMP.build_estimated_vas_dataframe(sol, mn_data, scenario_id)
 
-    _IMP.drop_results(case, result_path*"/eulvtf_oh_noground_no_restriction/", "_power_mult_$(power_mult)_", [], sol, mn_data, timestep_set, scenario_id, add_meas_noise, power_mult, false, false, false, use_length_bounds, length_bounds_percval, imp_est, imp_true, real_volts, real_vas, est_volts, est_vas, mn_data["nw"]["1"]["settings"]["exploit_equal_crossection"], mn_data["nw"]["1"]["settings"]["exploit_squaredness"], mn_data["nw"]["1"]["settings"]["exploit_horizontality"])
-    # _IMP.drop_shunt_results(case, result_path*"/eulvtf_oh_noground_no_restriction/", "_power_mult_$(power_mult)_", sol, mn_data, scenario_id, shunt_resistive)
-
+    _IMP.drop_results(case1, result_path*"/eulvtf_oh_no_restriction/", "_power_mult_$(power_mult)_", [], sol, mn_data, timestep_set, scenario_id, add_meas_noise, power_mult, false, false, false, use_length_bounds, length_bounds_percval, imp_est, imp_true, real_volts, real_vas, est_volts, est_vas, mn_data["nw"]["1"]["settings"]["exploit_equal_crossection"], mn_data["nw"]["1"]["settings"]["exploit_squaredness"], mn_data["nw"]["1"]["settings"]["exploit_horizontality"])
+    _IMP.drop_shunt_results(case1, result_path*"/eulvtf_oh_no_restriction/", "_power_mult_$(power_mult)_", sol, mn_data, scenario_id, shunt_resistive)
 end

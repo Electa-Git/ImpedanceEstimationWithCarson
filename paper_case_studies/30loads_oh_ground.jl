@@ -24,8 +24,6 @@ function run_impedance_estimation_oh_ground_30_load_case(result_path::String, ie
     
     data, eng = build_linecode_for_oh_ground_30l!(data, eng, z_pu) # assigns the set of linecodes we elected for this case and builds R,X
 
-    mn_data, real_volts, real_vas = _IMP.build_multinetwork_dsse_data(data, profiles, pf_solver; timestep_set = timestep_set, add_noise=add_meas_noise, seed = scenario_id, power_mult = power_mult)
-
     loads_with_shunts = [l for (l,load) in data["load"]][1:25]
     buses_with_shunts = [data["load"][l]["load_bus"] for l in loads_with_shunts]
     gs = _RAN.rand(z_pu./[10., 20., 30., 40., 50., 60., 70., 80.], 25)
