@@ -12,7 +12,7 @@ import PowerModelsDistribution as _PMD
 import DataDrivenImpedanceEstimationWithCarson as _IMP
 import JSON
 
-general_result_path = raw"C:\Users\mvanin\OneDrive - KU Leuven\Desktop\repos\DataDrivenImpedanceEstimationWithCarson\results_ma27"
+general_result_path = raw"C:\Users\mvanin\OneDrive - KU Leuven\Desktop\repos\DataDrivenImpedanceEstimationWithCarson\results_ma27/"
 
 ########################################################
 #####                                              #####
@@ -49,38 +49,38 @@ branch_length_plots(general_result_path, "eulvtf_ug")
 #########################
 
 # powerflow validation
-plot_30l_oh_pf_validation(general_result_path)
-plot_eu_oh_pf_validation(general_result_path)
-plot_30l_oh_noground_pf_validation(general_result_path)
-plot_eu_oh_noground_pf_validation(general_result_path)
+plot_30l_oh_pf_validation(general_result_path, power_mult=2.0)
+plot_eu_oh_pf_validation(general_result_path, power_mult=2.0)
+plot_30l_oh_noground_pf_validation(general_result_path, power_mult=2.0)
+plot_eu_oh_noground_pf_validation(general_result_path, power_mult=2.0)
 
 # cumulative impedance
-plot_30l_oh_cumulative_diffs_rxz_mult_1(general_result_path)
-plot_eu_oh_cumulative_diffs_rxz_mult_1(general_result_path)
-plot_30l_oh_noground_cumulative_diffs_rxz_mult_1(general_result_path)
-plot_eu_oh_cumulative_diffs_rxz_noground(general_result_path)
+plot_30l_oh_cumulative_diffs_rxz_mult_1(general_result_path, power_mult=2.0, ylims=(-0.5, 50))
+plot_eu_oh_cumulative_diffs_rxz_mult_1(general_result_path, power_mult=2.0, ylims=(-0.5, 25))
+plot_30l_oh_noground_cumulative_diffs_rxz_mult_1(general_result_path, power_mult=2.0,ylims=(-0.5, 50))
+plot_eu_oh_cumulative_diffs_rxz_noground(general_result_path, power_mult=2.0, ylims=(-0.5, 25))
 
 # linecode plots
-linecode_plots(general_result_path, "30l_oh")
-linecode_plots(general_result_path, "30l_oh_noground")
-linecode_plots(general_result_path, "eulvtf_oh"; feeder_id = "eulvtf")
-linecode_plots(general_result_path, "eulvtf_oh_noground"; feeder_id = "eulvtf")
+linecode_plots(general_result_path, "30l_oh", power_mult=2.0)
+linecode_plots(general_result_path, "30l_oh_noground", power_mult=2.0)
+linecode_plots(general_result_path, "eulvtf_oh"; feeder_id = "eulvtf", power_mult=2.0)
+linecode_plots(general_result_path, "eulvtf_oh_noground"; feeder_id = "eulvtf", power_mult=2.0)
 
 # carson input plots
-carson_input_plots(general_result_path, "30l_oh")
-carson_input_plots(general_result_path, "eulvtf_oh")
-carson_input_plots(general_result_path, "30l_oh_noground")
-carson_input_plots(general_result_path, "eulvtf_oh_noground")
+carson_input_plots(general_result_path, "30l_oh", power_mult=2.0)
+carson_input_plots(general_result_path, "30l_oh_noground", power_mult=2.0)
+carson_input_plots(general_result_path, "eulvtf_oh", power_mult=2.0)
+carson_input_plots(general_result_path, "eulvtf_oh_noground", power_mult=2.0)
 
 # branch length plots
-branch_length_plots(general_result_path, "30l_oh")
-branch_length_plots(general_result_path, "eulvtf_oh")
-branch_length_plots(general_result_path, "30l_oh_noground")
-branch_length_plots(general_result_path, "eulvtf_oh_noground")
+branch_length_plots(general_result_path, "30l_oh", power_mult=2.0)
+branch_length_plots(general_result_path, "eulvtf_oh", power_mult=2.0)
+branch_length_plots(general_result_path, "30l_oh_noground", power_mult=2.0)
+branch_length_plots(general_result_path, "eulvtf_oh_noground", power_mult=2.0)
 
 # shunt plots
-shunt_plots_scatter(general_result_path, "30l_oh")
-shunt_plots_scatter(general_result_path, "eulvtf_oh")
+shunt_plots_scatter(general_result_path, "30l_oh", power_mult=2.0)
+shunt_plots_scatter(general_result_path, "eulvtf_oh",power_mult=2.0)
 
 
 function plot_30l_ug_pf_validation(general_result_path)
@@ -96,20 +96,20 @@ function plot_30l_ug_pf_validation(general_result_path)
     end
 end
 
-function plot_30l_oh_pf_validation(general_result_path)
+function plot_30l_oh_pf_validation(general_result_path; power_mult::Float64=1.0)
     case = "30l_oh"
     folders = ["30l_oh_cross_only", "30l_oh_horizontal_only", "30l_oh_most_restricted", "30l_oh_no_restriction"]
-    powerflow_validation_paperplot(general_result_path, folders, ytickz = [0., 0.5, 1., 1.5, 2., 2.5])
-    _SP.savefig(general_result_path*"/$(case)_pf_validation_constr_paper.png")
-    _SP.savefig(general_result_path*"/$(case)_pf_validation_constr_paper.pdf")
+    powerflow_validation_paperplot(general_result_path, folders, power_mult=power_mult, ytickz = [0., 0.5, 1., 1.5, 2., 2.5])
+    _SP.savefig(general_result_path*"/$(case)_pf_validation_constr_paper_pm_$power_mult.png")
+    _SP.savefig(general_result_path*"/$(case)_pf_validation_constr_paper_pm_$power_mult.pdf")
 end
 
-function plot_30l_oh_noground_pf_validation(general_result_path)
+function plot_30l_oh_noground_pf_validation(general_result_path; power_mult::Float64=1.0)
     case = "30l_oh_noground"
     folders = ["30l_oh_noground_cross_only", "30l_oh_noground_horizontal_only", "30l_oh_noground_most_restricted", "30l_oh_noground_no_restriction"]
-    powerflow_validation_paperplot(general_result_path, folders, ytickz = [0., 0.5, 1., 1.5, 2., 2.5])
-    _SP.savefig(general_result_path*"/$(case)_pf_validation_constr_paper.png")
-    _SP.savefig(general_result_path*"/$(case)_pf_validation_constr_paper.pdf")
+    powerflow_validation_paperplot(general_result_path, folders, power_mult = power_mult, ytickz = [0., 0.5, 1., 1.5, 2., 2.5])
+    _SP.savefig(general_result_path*"/$(case)_pf_validation_constr_paper_pm_$power_mult.png")
+    _SP.savefig(general_result_path*"/$(case)_pf_validation_constr_paper_pm_$power_mult.pdf")
 end
 
 function plot_eu_ug_pf_validation(general_result_path)
@@ -125,24 +125,26 @@ function plot_eu_ug_pf_validation(general_result_path)
     end
 end
 
-function plot_eu_oh_pf_validation(general_result_path)
+function plot_eu_oh_pf_validation(general_result_path; power_mult::Float64=1.0)
     case = "eulvtf_oh"
     folders = ["eulvtf_oh_cross_only", "eulvtf_oh_horizontal_only", "eulvtf_oh_most_restricted", "eulvtf_oh_no_restriction"]
-    powerflow_validation_paperplot(general_result_path, folders, ytickz = [0., 0.5, 1., 1.5, 2., 2.5])
-    _SP.savefig(general_result_path*"/$(case)_pf_validation_constr_paper.png")
-    _SP.savefig(general_result_path*"/$(case)_pf_validation_constr_paper.pdf")
+    p = powerflow_validation_paperplot(general_result_path, folders, ytickz = [0., 0.5, 1., 1.5, 2., 2.5])
+    _SP.ylims!(-0.1, 1.5)
+    _SP.savefig(general_result_path*"/$(case)_pf_validation_constr_paper_power_mult_$(power_mult).png")
+    _SP.savefig(general_result_path*"/$(case)_pf_validation_constr_paper_power_mult_$(power_mult).pdf")
 end
 
-function plot_eu_oh_noground_pf_validation(general_result_path)
+function plot_eu_oh_noground_pf_validation(general_result_path; power_mult::Float64=1.0)
     case = "eulvtf_oh_noground"
     folders = ["eulvtf_oh_noground_cross_only", "eulvtf_oh_noground_horizontal_only", "eulvtf_oh_noground_most_restricted", "eulvtf_oh_noground_no_restriction"]
-    powerflow_validation_paperplot(general_result_path, folders, ytickz = [0., 0.5, 1., 1.5, 2., 2.5])
-    _SP.savefig(general_result_path*"/$(case)_pf_validation_constr_paper.png")
-    _SP.savefig(general_result_path*"/$(case)_pf_validation_constr_paper.pdf")
+    p = powerflow_validation_paperplot(general_result_path, folders, ytickz = [0., 0.5, 1., 1.5, 2., 2.5])
+    _SP.ylims!(-0.1, 1.5)
+    _SP.savefig(general_result_path*"/$(case)_pf_validation_constr_paper_$(power_mult).png")
+    _SP.savefig(general_result_path*"/$(case)_pf_validation_constr_paper_$(power_mult).pdf")
 end
 
 
-function powerflow_validation_paperplot(general_result_path::String, case::String; ytickz::Vector=[])
+function powerflow_validation_paperplot(general_result_path::String, case::String; ytickz::Vector=[], power_mult::Float64=1.0)
 
     folders = [f for f in readdir(general_result_path) if occursin(case, f) && !(occursin(".png", f) || occursin(".pdf", f))]
     est_dfs = []
@@ -151,9 +153,9 @@ function powerflow_validation_paperplot(general_result_path::String, case::Strin
     for folder in folders 
         if isdir(joinpath(general_result_path, folder))
             for file in readdir(joinpath(general_result_path, folder))
-                if occursin("pf_validation_real", file) && occursin("vm_power_mult_1.0", file)
-                    real_pf = CSV.read(joinpath(general_result_path, folder, "pf_validation_real_vm_power_mult_1.0.csv"),_DF.DataFrame, ntasks = 1)
-                    est_pf  = CSV.read(joinpath(general_result_path, folder, "pf_validation_est_vm_power_mult_1.0.csv"),_DF.DataFrame, ntasks = 1)
+                if occursin("pf_validation_real", file) && occursin("vm_power_mult_$(power_mult)", file)
+                    real_pf = CSV.read(joinpath(general_result_path, folder, "pf_validation_real_vm_power_mult_$(power_mult).csv"),_DF.DataFrame, ntasks = 1)
+                    est_pf  = CSV.read(joinpath(general_result_path, folder, "pf_validation_est_vm_power_mult_$(power_mult).csv"),_DF.DataFrame, ntasks = 1)
                     if occursin("no_restriction", folder) push!(legend_filenames, L"\textrm{No  \, \, rest.}") end
                     if occursin("most_restricted", folder) push!(legend_filenames, L"A_p+\mathcal{G}  \, \, \textrm{rest.}") end
                     if occursin("cross", folder) push!(legend_filenames, L"A_p  \, \, \textrm{rest.}") end
@@ -194,7 +196,7 @@ function powerflow_validation_paperplot(general_result_path::String, case::Strin
     return p
 end
 
-function powerflow_validation_paperplot(general_result_path::String, folders::Vector{String}; ytickz::Vector=[])
+function powerflow_validation_paperplot(general_result_path::String, folders::Vector{String}; power_mult::Float64=1.0, ytickz::Vector=[])
 
     est_dfs = []
     real_dfs = []
@@ -202,8 +204,9 @@ function powerflow_validation_paperplot(general_result_path::String, folders::Ve
     for folder in folders 
         for file in readdir(joinpath(general_result_path, folder))
             if occursin("pf_validation_real_vm", file) # && occursin("vm_noground_power_mult_1.0", file)
-                real_pf = CSV.read(joinpath(general_result_path, folder, "pf_validation_real_vm_noground_power_mult_1.0.csv"),_DF.DataFrame, ntasks = 1)
-                est_pf  = CSV.read(joinpath(general_result_path, folder, "pf_validation_est_vm_noground_power_mult_1.0.csv"),_DF.DataFrame, ntasks = 1)
+                real_pf = CSV.read(joinpath(general_result_path, folder, file),_DF.DataFrame, ntasks = 1)
+                est_file = [f for f in readdir(joinpath(general_result_path, folder)) if (occursin("pf_validation_est_vm", f) && occursin("$power_mult", f))][1]
+                est_pf  = CSV.read(joinpath(general_result_path, folder, est_file),_DF.DataFrame, ntasks = 1)
                 if occursin("no_restriction", folder) push!(legend_filenames, L"\textrm{No  \, \, rest.}") end
                 if occursin("most_restricted", folder) push!(legend_filenames, L"A_p+\mathcal{G}  \, \, \textrm{rest.}") end
                 if occursin("cross", folder) push!(legend_filenames, L"A_p  \, \, \textrm{rest.}") end
@@ -339,31 +342,31 @@ function plot_30l_ug_cumulative_diffs_rxz_mult_3(general_result_path)
     end
 end
 
-function plot_30l_oh_cumulative_diffs_rxz_mult_1(general_result_path)
+function plot_30l_oh_cumulative_diffs_rxz_mult_1(general_result_path; power_mult=1.0, ylims = ())
     folders = ["30l_oh_cross_only", "30l_oh_horizontal_only", "30l_oh_most_restricted", "30l_oh_no_restriction"] 
     for whatt in ["Xc", "Rc", "Zc"]
-        ylims = whatt == "Xc" ? (-0.4, 30.4) : ()
+        # ylims = whatt == "Xc" ? (-0.4, 30.4) : ()
         if whatt == "Xc" yticks = [i for i in 0:5:30] end 
         if whatt == "Rc" yticks = [i for i in 0:20:100] end  
         if whatt == "Zc" yticks = [i for i in 0:10:60] end  
-        p =  cumulative_zrx_boxplot_crossconstraint_paper(general_result_path, folders, 1.0; whatt=whatt, ytickz = yticks, ylims = ylims)
-        _SP.savefig(general_result_path*"/30l_oh_cumulative_$(whatt)_diff_boxplot_constr_paper_pm1.png")
-        _SP.savefig(general_result_path*"/30l_oh_cumulative_$(whatt)_diff_boxplot_constr_paper_pm1.pdf")
+        p =  cumulative_zrx_boxplot_crossconstraint_paper(general_result_path, folders, power_mult; whatt=whatt, ytickz = yticks, ylims = ylims)
+        _SP.savefig(general_result_path*"/30l_oh_cumulative_$(whatt)_diff_boxplot_constr_paper_pm_$power_mult.png")
+        _SP.savefig(general_result_path*"/30l_oh_cumulative_$(whatt)_diff_boxplot_constr_paper_pm_$power_mult.pdf")
     end
 end
 
-function plot_30l_oh_noground_cumulative_diffs_rxz_mult_1(general_result_path)
+function plot_30l_oh_noground_cumulative_diffs_rxz_mult_1(general_result_path;  power_mult=1.0, ylims=())
     folders = ["30l_oh_noground_cross_only", "30l_oh_noground_horizontal_only", "30l_oh_noground_most_restricted", "30l_oh_noground_no_restriction"] 
     for folder in folders
         if  any([occursin("imp_est_scenario_1__power_mult_1.0", i) for i in readdir(joinpath(general_result_path, folder))])
             for whatt in ["Xc", "Rc", "Zc"]
-                ylims = whatt == "Xc" ? (-0.4, 30.4) : ()
+                # ylims = whatt == "Xc" ? (-0.4, 30.4) : ()
                 if whatt == "Xc" yticks = [i for i in 0:5:30] end 
                 if whatt == "Rc" yticks = [i for i in 0:20:100] end  
                 if whatt == "Zc" yticks = [i for i in 0:10:60] end  
-                p =  cumulative_zrx_boxplot_crossconstraint_paper(general_result_path, folders, 1.0; whatt=whatt, ytickz = yticks, ylims = ylims)
-                _SP.savefig(general_result_path*"/30l_oh_noground_cumulative_$(whatt)_diff_boxplot_constr_paper_pm1.png")
-                _SP.savefig(general_result_path*"/30l_oh_noground_cumulative_$(whatt)_diff_boxplot_constr_paper_pm1.pdf")
+                p =  cumulative_zrx_boxplot_crossconstraint_paper(general_result_path, folders, power_mult; whatt=whatt, ytickz = yticks, ylims = ylims)
+                _SP.savefig(general_result_path*"/30l_oh_noground_cumulative_$(whatt)_diff_boxplot_constr_paper_pm_$power_mult.png")
+                _SP.savefig(general_result_path*"/30l_oh_noground_cumulative_$(whatt)_diff_boxplot_constr_paper_pm_$power_mult.pdf")
             end
         end
     end
@@ -388,35 +391,36 @@ function plot_eu_ug_cumulative_diffs_rxz_mult_1(general_result_path)
     end
 end
 
-function plot_eu_oh_cumulative_diffs_rxz_mult_1(general_result_path)
+function plot_eu_oh_cumulative_diffs_rxz_mult_1(general_result_path; power_mult::Float64=1., ylims=())
     folders = ["eulvtf_oh_cross_only", "eulvtf_oh_horizontal_only", "eulvtf_oh_most_restricted", "eulvtf_oh_no_restriction"] 
     for folder in folders
         if  any([occursin("imp_est_scenario_1__power_mult_1.0", i) for i in readdir(joinpath(general_result_path, folder))])
             for whatt in ["Xc", "Rc", "Zc"]
-                ylims = whatt == "Xc" ? (-0.4, 30.4) : ()
+                # if whatt == "Xc" ylims = (-0.4, 30.4) end
                 if whatt == "Xc" yticks = [i for i in 0:5:30] end 
                 if whatt == "Rc" yticks = [i for i in 0:20:100] end  
                 if whatt == "Zc" yticks = [i for i in 0:10:60] end  
-                p =  cumulative_zrx_boxplot_crossconstraint_paper(general_result_path, folders, 1.0; whatt=whatt, ytickz = yticks, ylims = ylims)
-                _SP.savefig(general_result_path*"/eulvtf_oh_cumulative_$(whatt)_diff_boxplot_constr_paper_pm1.png")
-                _SP.savefig(general_result_path*"/eulvtf_oh_cumulative_$(whatt)_diff_boxplot_constr_paper_pm1.pdf")
+                p =  cumulative_zrx_boxplot_crossconstraint_paper(general_result_path, folders, power_mult; whatt=whatt, ytickz = yticks, ylims = ylims)
+                _SP.savefig(general_result_path*"/eulvtf_oh_cumulative_$(whatt)_diff_boxplot_constr_paper_pm_$power_mult.png")
+                _SP.savefig(general_result_path*"/eulvtf_oh_cumulative_$(whatt)_diff_boxplot_constr_paper_pm_$power_mult.pdf")
             end
         end
     end
 end
 
-function plot_eu_oh_cumulative_diffs_rxz_noground(general_result_path)
+function plot_eu_oh_cumulative_diffs_rxz_noground(general_result_path; power_mult::Float64=1.0, ylims=())
     folders = ["eulvtf_oh_noground_cross_only", "eulvtf_oh_noground_horizontal_only", "eulvtf_oh_noground_most_restricted", "eulvtf_oh_noground_no_restriction"] 
     for folder in folders
-        if  any([occursin("imp_est_scenario_1__power_mult_1.0", i) for i in readdir(joinpath(general_result_path, folder))])
+        if  any([occursin("imp_est_scenario_1__power_mult_$power_mult", i) for i in readdir(joinpath(general_result_path, folder))])
             for whatt in ["Xc", "Rc", "Zc"]
-                ylims = whatt == "Xc" ? (-0.4, 30.4) : ()
+                # if whatt == "Xc" ylims = (-0.4, 30.4) end
                 if whatt == "Xc" yticks = [i for i in 0:5:30] end 
                 if whatt == "Rc" yticks = [i for i in 0:20:100] end  
                 if whatt == "Zc" yticks = [i for i in 0:10:60] end  
-                p =  cumulative_zrx_boxplot_crossconstraint_paper(general_result_path, folders, 1.0; whatt=whatt, ytickz = yticks, ylims = ylims)
-                _SP.savefig(general_result_path*"/eulvtf_oh_noground_cumulative_$(whatt)_diff_boxplot_constr_paper_pm1.png")
-                _SP.savefig(general_result_path*"/eulvtf_oh_noground_cumulative_$(whatt)_diff_boxplot_constr_paper_pm1.pdf")
+                display(ylims)
+                p =  cumulative_zrx_boxplot_crossconstraint_paper(general_result_path, folders, power_mult; whatt=whatt, ytickz = yticks, ylims = ylims)
+                _SP.savefig(general_result_path*"/eulvtf_oh_noground_cumulative_$(whatt)_diff_boxplot_constr_paper_pm_$power_mult.png")
+                _SP.savefig(general_result_path*"/eulvtf_oh_noground_cumulative_$(whatt)_diff_boxplot_constr_paper_pm_$power_mult.pdf")
             end
         end
     end
@@ -547,6 +551,10 @@ function linecode_plots(general_result_path::String, case::String; feeder_id::St
             "30l_oh_most_restricted" => L"A_p+\mathcal{G} \, \, \textrm{rest.}",
             "30l_oh_no_restriction"  => L"\textrm{No} \, \, \textrm{rest.}",
             "30l_oh_horizontal_only"   => L"\mathcal{G}  \, \, \textrm{rest.}",
+            "30l_oh_noground_cross_only" => L"A_p \, \, \textrm{rest.}",
+            "30l_oh_noground_most_restricted" => L"A_p+\mathcal{G} \, \, \textrm{rest.}",
+            "30l_oh_noground_no_restriction"  => L"\textrm{No} \, \, \textrm{rest.}",
+            "30l_oh_noground_horizontal_only"   => L"\mathcal{G}  \, \, \textrm{rest.}",
             "eulvtf_ug_cross_only" => L"A_p  \, \, \textrm{rest.}",
             "eulvtf_ug_most_restricted" => L"A_p+\mathcal{G}  \, \, \textrm{rest.}",
             "eulvtf_ug_no_restriction"  => L"\textrm{No} \, \, \textrm{rest.}",
@@ -570,6 +578,10 @@ function linecode_plots(general_result_path::String, case::String; feeder_id::St
             "30l_oh_most_restricted" => :diamond,
             "30l_oh_no_restriction"  => :rect,
             "30l_oh_horizontal_only"   =>  :utriangle,
+            "30l_oh_noground_cross_only" => :circle,
+            "30l_oh_noground_most_restricted" => :diamond,
+            "30l_oh_noground_no_restriction"  => :rect,
+            "30l_oh_noground_horizontal_only"   =>  :utriangle,
             "eulvtf_ug_cross_only" => :circle,
             "eulvtf_ug_most_restricted" => :diamond,
             "eulvtf_ug_no_restriction"  => :rect,
@@ -621,13 +633,18 @@ function linecode_plots(general_result_path::String, case::String; feeder_id::St
             p = _SP.scatter([1:5], [mat_rs[1,1], mat_rs[2,2], mat_xs[1,1], mat_xs[2,2], mat_xs[1,2]], xticks=((1:5), [L"R_{pp}", L"R_{nn}", L"X_{pp}", L"X_{nn}", L"X_{pn}"]), legend=legendloc, 
                                     ylabel=L"[\Omega/km]", label = L"\textrm{True}", xtickfontsize=13,ytickfontsize=12, ylabelfontsize=14, legendfontsize=12, markershape = :xcross, ms=6, color="black",  yscale=:log10)
         end
-        folders = [f for f in readdir(general_result_path) if occursin(case, f) && !occursin(".", f)]
+
+        folders = [f for f in readdir(general_result_path) if occursin(case, f) && isdir(joinpath(general_result_path, f))]
+
+        if length(folders) > 4 
+            folders = filter(x->!occursin("noground", x), folders)
+        end
 
         return_p = false
         for folder in folders 
             if isdir(joinpath(general_result_path, folder))
                 for file in readdir(joinpath(general_result_path, folder))
-                    if occursin("linecode_results", file) && (occursin("power_mult_$(power_mult)", file) || occursin("ground", file))
+                    if occursin("linecode_results", file) && occursin("power_mult_$(power_mult)", file) #&& occursin("ground", file))
                         df = CSV.read(joinpath(general_result_path, folder, file), _DF.DataFrame, ntasks = 1)
                         if linecode ∈ df.linecode_name
                             return_p = true
@@ -696,6 +713,10 @@ function carson_input_plots(general_result_path::String, case::String; power_mul
             "30l_oh_most_restricted" => L"A_p+\mathcal{G} \, \, \textrm{rest.}",
             "30l_oh_no_restriction"  => L"\textrm{No} \, \, \textrm{rest.}",
             "30l_oh_horizontal_only"   => L"\mathcal{G}  \, \, \textrm{rest.}",
+            "30l_oh_noground_cross_only" => L"A_p \, \, \textrm{rest.}",
+            "30l_oh_noground_most_restricted" => L"A_p+\mathcal{G} \, \, \textrm{rest.}",
+            "30l_oh_noground_no_restriction"  => L"\textrm{No} \, \, \textrm{rest.}",
+            "30l_oh_noground_horizontal_only"   => L"\mathcal{G}  \, \, \textrm{rest.}",
             "eulvtf_ug_cross_only" => L"A_p  \, \, \textrm{rest.}",
             "eulvtf_ug_most_restricted" => L"A_p+\mathcal{G}  \, \, \textrm{rest.}",
             "eulvtf_ug_no_restriction"  => L"\textrm{No} \, \, \textrm{rest.}",
@@ -703,7 +724,11 @@ function carson_input_plots(general_result_path::String, case::String; power_mul
             "eulvtf_oh_cross_only" => L"A_p  \, \, \textrm{rest.}",
             "eulvtf_oh_most_restricted" => L"A_p+\mathcal{G}  \, \, \textrm{rest.}",
             "eulvtf_oh_no_restriction"  => L"\textrm{No} \, \, \textrm{rest.}",
-            "eulvtf_oh_horizontal_only"   => L"\mathcal{G}  \, \, \textrm{rest.}"
+            "eulvtf_oh_horizontal_only"   => L"\mathcal{G}  \, \, \textrm{rest.}",
+            "eulvtf_oh_noground_cross_only" => L"A_p  \, \, \textrm{rest.}",
+            "eulvtf_oh_noground_most_restricted" => L"A_p+\mathcal{G}  \, \, \textrm{rest.}",
+            "eulvtf_oh_noground_no_restriction"  => L"\textrm{No} \, \, \textrm{rest.}",
+            "eulvtf_oh_noground_horizontal_only"   => L"\mathcal{G}  \, \, \textrm{rest.}"
         )
 
         markershape_dict = Dict(
@@ -715,6 +740,10 @@ function carson_input_plots(general_result_path::String, case::String; power_mul
             "30l_oh_most_restricted" => :diamond,
             "30l_oh_no_restriction"  => :rect,
             "30l_oh_horizontal_only"   =>  :utriangle,
+            "30l_oh_noground_cross_only" => :circle,
+            "30l_oh_noground_most_restricted" => :diamond,
+            "30l_oh_noground_no_restriction"  => :rect,
+            "30l_oh_noground_horizontal_only"   =>  :utriangle,
             "eulvtf_ug_cross_only" => :circle,
             "eulvtf_ug_most_restricted" => :diamond,
             "eulvtf_ug_no_restriction"  => :rect,
@@ -722,7 +751,11 @@ function carson_input_plots(general_result_path::String, case::String; power_mul
             "eulvtf_oh_cross_only" => :circle,
             "eulvtf_oh_most_restricted" => :diamond,
             "eulvtf_oh_no_restriction"  => :rect,
-            "eulvtf_oh_horizontal_only"   =>  :utriangle
+            "eulvtf_oh_horizontal_only"   =>  :utriangle,
+            "eulvtf_oh_noground_cross_only" => :circle,
+            "eulvtf_oh_noground_most_restricted" => :diamond,
+            "eulvtf_oh_noground_no_restriction"  => :rect,
+            "eulvtf_oh_noground_horizontal_only"   =>  :utriangle
         )
 
         markersize_dict = Dict(
@@ -734,6 +767,10 @@ function carson_input_plots(general_result_path::String, case::String; power_mul
             "30l_oh_most_restricted" =>4,
             "30l_oh_no_restriction"  =>5,
             "30l_oh_horizontal_only"   =>5,
+            "30l_oh_noground_cross_only" =>8,
+            "30l_oh_noground_most_restricted" =>4,
+            "30l_oh_noground_no_restriction"  =>5,
+            "30l_oh_noground_horizontal_only"   =>5,
             "eulvtf_ug_cross_only" =>8,
             "eulvtf_ug_most_restricted" =>4,
             "eulvtf_ug_no_restriction"  =>5,
@@ -741,7 +778,11 @@ function carson_input_plots(general_result_path::String, case::String; power_mul
             "eulvtf_oh_cross_only" =>8,
             "eulvtf_oh_most_restricted" =>4,
             "eulvtf_oh_no_restriction"  =>5,
-            "eulvtf_oh_horizontal_only"   =>4
+            "eulvtf_oh_horizontal_only"   =>4,
+            "eulvtf_oh_noground_cross_only" =>8,
+            "eulvtf_oh_noground_most_restricted" =>4,
+            "eulvtf_oh_noground_no_restriction"  =>5,
+            "eulvtf_oh_noground_horizontal_only"   =>4
         )
 
         d_true = parse.(Float64, split(chop(lc.dist_true[1], head=1),','))
@@ -749,7 +790,11 @@ function carson_input_plots(general_result_path::String, case::String; power_mul
 
         p = _SP.plot(legend=:bottomright, ylabel=L"\textrm{Relative} \, \, \textrm{error} \, \, [\%]", label = L"\textrm{True}", xtickfontsize=13,ytickfontsize=12, ylabelfontsize=14, legendfontsize=12)
 
-        folders = [f for f in readdir(general_result_path) if occursin(case, f)]
+        folders = [f for f in readdir(general_result_path) if occursin(case, f) && isdir(joinpath(general_result_path, f))]
+
+        if length(folders) > 4 
+            folders = filter(x->!occursin("noground", x), folders)
+        end
 
         return_p = false
         for folder in folders 
@@ -820,7 +865,11 @@ function branch_length_plots(general_result_path::String, case::String; power_mu
     ps = _SP.plot(legend=false, ylabel=L"\textrm{Relative} \, \, \textrm{error} \, \, [\%] - \textrm{Service} \, \, \textrm{cable}", label = L"\textrm{True}", xtickfontsize=13,ytickfontsize=12, ylabelfontsize=14, legendfontsize=12)
     pm = _SP.plot(legend=false, ylabel=L"\textrm{Relative} \, \, \textrm{error} \, \, [\%] - \textrm{Main} \, \, \textrm{cable}" , label = L"\textrm{True}", xtickfontsize=13,ytickfontsize=12, ylabelfontsize=14, legendfontsize=12)
 
-    folders = [f for f in readdir(general_result_path) if occursin(case, f)]
+    folders = [f for f in readdir(general_result_path) if occursin(case, f) && isdir(joinpath(general_result_path, f))]
+
+    if length(folders) > 4 
+        folders = filter(x->!occursin("noground", x), folders)
+    end
 
     legend_filenames = []
     xposition = 1
@@ -829,31 +878,29 @@ function branch_length_plots(general_result_path::String, case::String; power_mu
         if occursin("most_restricted", folder) push!(legend_filenames, L"A_p+\mathcal{G}  \, \, \textrm{rest.}") end
         if occursin("cross", folder) push!(legend_filenames, L"A_p  \, \, \textrm{rest.}") end
         if (occursin("horizontal", folder) || occursin("square", folder)) push!(legend_filenames, L"\mathcal{G}  \, \, \textrm{rest.}") end
-        if isdir(joinpath(general_result_path, folder))
-            for file in readdir(joinpath(general_result_path, folder))
-                if occursin("length_dict", file) && occursin("power_mult_$(power_mult)", file)
-                    dict = JSON.parsefile(joinpath(general_result_path, folder, file))
-                    service_est = []
-                    main_est = []
-                    service_true = []
-                    main_true = []
-                    for (b,br) in dict
-                        if b ∈ service_branches
-                            push!(service_est, br["length_est"])
-                            push!(service_true, br["length_true"])
-                        else
-                            push!(main_est, br["length_est"])
-                            push!(main_true, br["length_true"])
-                        end
-                    end    
-                    pm = _SP.boxplot!(pm, [xposition],(main_true.-main_est)./main_true*100, yticks = ([i for i in -30:10:30], [L"%$i" for i in -30:10:30]),
-                        legend=:bottomright, color="lightgrey", xticks = ((1:4),legend_filenames))
-                    pm = _SP.dotplot!(pm,  [xposition],(main_true.-main_est)./main_true*100, color="grey", legend=false)
-                    ps = _SP.boxplot!(ps,  [xposition],(service_true.-service_est)./service_true*100, yticks = ([i for i in -30:10:30], [L"%$i" for i in -30:10:30]),
-                        legend=:bottomright,  color="lightgrey",xticks = ((1:4),legend_filenames))     
-                    ps = _SP.dotplot!(ps,  [xposition],(service_true.-service_est)./service_true*100, color="grey", legend=false)
-                    xposition+=1
-                end
+        for file in readdir(joinpath(general_result_path, folder))
+            if occursin("length_dict", file) && occursin("power_mult_$(power_mult)", file)
+                dict = JSON.parsefile(joinpath(general_result_path, folder, file))
+                service_est = []
+                main_est = []
+                service_true = []
+                main_true = []
+                for (b,br) in dict
+                    if b ∈ service_branches
+                        push!(service_est, br["length_est"])
+                        push!(service_true, br["length_true"])
+                    else
+                        push!(main_est, br["length_est"])
+                        push!(main_true, br["length_true"])
+                    end
+                end    
+                pm = _SP.boxplot!(pm, [xposition],(main_true.-main_est)./main_true*100, yticks = ([i for i in -30:10:30], [L"%$i" for i in -30:10:30]),
+                    legend=:bottomright, color="lightgrey", xticks = ((1:4),legend_filenames))
+                pm = _SP.dotplot!(pm,  [xposition],(main_true.-main_est)./main_true*100, color="grey", legend=false)
+                ps = _SP.boxplot!(ps,  [xposition],(service_true.-service_est)./service_true*100, yticks = ([i for i in -30:10:30], [L"%$i" for i in -30:10:30]),
+                    legend=:bottomright,  color="lightgrey",xticks = ((1:4),legend_filenames))     
+                ps = _SP.dotplot!(ps,  [xposition],(service_true.-service_est)./service_true*100, color="grey", legend=false)
+                xposition+=1
             end
         end
     end
@@ -911,8 +958,9 @@ function shunt_plots_scatter(general_result_path::String, case::String; power_mu
 
     folders = [f for f in readdir(general_result_path) if occursin(case, f)]
 
-    filename = case == "30l_oh" ? "30l_oh_most_restricted/_30loads_oh__shunts_scenario_1__power_mult_1.0__resistive_true.json" : "eulvtf_oh_most_restricted/_eulvtf_oh__shunts_scenario_1__power_mult_1.0__resistive_true.json"
-    
+    filename = case == "30l_oh" ? "30l_oh_most_restricted/_30loads_oh__shunts_scenario_1__power_mult_2.0__resistive_true.json" : "eulvtf_oh_most_restricted/_eulvtf_oh__shunts_scenario_1__power_mult_2.0__resistive_true.json"
+    xtkz = case == "30l_oh" ? (5:5:25, [L"%$i" for i in 5:5:25]) : (5:5:57, [L"%$i" for i in 5:5:57])
+
     dict_truth = JSON.parsefile(joinpath(general_result_path, filename))
 
     shunt_true = []
@@ -921,14 +969,14 @@ function shunt_plots_scatter(general_result_path::String, case::String; power_mu
     end
 
     _SP.scatter(shunt_true, ylabel=L"1/y^{sh} \, \, [\Omega]", xlabel = L"\textrm{Shunt} \, \, \textrm{id.} \, \, \textrm{[-]}", label = L"\textrm{True}", 
-                xticks = (5:5:25, [L"%$i" for i in 5:5:25]), xtickfontsize=13,ytickfontsize=12, ylabelfontsize=14, legendfontsize=12, markershape = :xcross, ms=6, color="black",
+                xticks = xtkz, xtickfontsize=13,ytickfontsize=12, ylabelfontsize=14, legendfontsize=12, markershape = :xcross, ms=6, color="black",
                 yticks = ([5, 20, 40, 60, 80, 100], [L"%$i" for i in [5, 20, 40, 60, 80, 100]]))
 
     legend_filenames = []
     for folder in folders
         if isdir(joinpath(general_result_path, folder))
             for file in readdir(joinpath(general_result_path, folder))
-                if occursin("__shunts", file) #&& occursin("power_mult_$(power_mult)", file)
+                if occursin("__shunts", file) && occursin("power_mult_$(power_mult)", file)
                     if occursin("no_restriction", folder) push!(legend_filenames, L"\textrm{No  \, \, rest.}") end
                     if occursin("most_restricted", folder) push!(legend_filenames, L"A_p+\mathcal{G}  \, \, \textrm{rest.}") end
                     if occursin("cross", folder) push!(legend_filenames, L"A_p  \, \, \textrm{rest.}") end

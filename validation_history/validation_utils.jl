@@ -241,7 +241,6 @@ function build_rx_sol_dict(mn_data::Dict, sol::Dict)
 
         r_init = fill(r_pq, size(A_p))
         lc["r"] = r_init.+diagm([ρ/A*(1+(α*(T-20))) for A in A_p])
-        display(lc["r"])
         x = zeros(size(A_p)[1], size(A_p)[1])
         for c in CartesianIndices(x)
             if c[1] == c[2]

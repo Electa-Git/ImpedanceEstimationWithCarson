@@ -23,13 +23,13 @@ validation_timesteps = find_most_loaded_timesteps(profiles, 400)[201:end]
 #### RUNS POWER FLOW VALIDATION
 ########################################################################
 
-for folder in ["eulvtf_oh_noground_cross_only", "eulvtf_oh_noground_horizontal_only", "eulvtf_oh_noground_most_restricted", "eulvtf_oh_noground_no_restriction"]#, "eulvtf_oh_noground_cross_only", "eulvtf_oh_horizontal_only", "eulvtf_oh_most_restricted", "eulvtf_oh_no_restriction"]#["30l_oh_noground_cross_only", "30l_oh_noground_horizontal_only", "30l_oh_noground_most_restricted", "30l_oh_noground_no_restriction", "eulvtf_oh_noground_cross_only", "eulvtf_oh_noground_horizontal_only", "eulvtf_oh_noground_most_restricted", "eulvtf_oh_noground_no_restriction"]#readdir(general_result_path)
+for folder in ["30l_oh_noground_cross_only", "30l_oh_noground_horizontal_only", "30l_oh_noground_most_restricted", "30l_oh_noground_no_restriction"]#["eulvtf_oh_noground_cross_only", "eulvtf_noground_oh_horizontal_only", "eulvtf_oh_noground_most_restricted", "eulvtf_oh_noground_no_restriction"]#["30l_oh_noground_cross_only", "30l_oh_noground_horizontal_only", "30l_oh_noground_most_restricted", "30l_oh_noground_no_restriction"]
     if isdir(joinpath(general_result_path, folder)) && occursin("oh", folder)
         feeder_name = occursin("30", folder) ? "30load-feeder" : "eulvtf"
         result_path = joinpath(general_result_path, folder)
         if feeder_name == "30load-feeder"
             true_ground_shunts = raw"C:\Users\mvanin\OneDrive - KU Leuven\Desktop\repos\DataDrivenImpedanceEstimationWithCarson\results_ma27\30l_oh_most_restricted\_30loads_oh__shunts_scenario_1__power_mult_1.0__resistive_true.json"
-            for power_mult in [1.0]#, 2.0, 3.0]
+            for power_mult in [2.0]#, 2.0, 3.0]
                 extra_id = "_power_mult_$(power_mult)"
                 gen_res_file = [f for f in readdir(joinpath(general_result_path, folder)) if occursin("_general_summary_scenario_1__power_mult_$(power_mult)_", f)][1]
                 general_results = CSV.read(joinpath(general_result_path, folder, gen_res_file), _DF.DataFrame, ntasks = 1)
@@ -41,7 +41,7 @@ for folder in ["eulvtf_oh_noground_cross_only", "eulvtf_oh_noground_horizontal_o
             end
         else
             true_ground_shunts = raw"C:\Users\mvanin\OneDrive - KU Leuven\Desktop\repos\DataDrivenImpedanceEstimationWithCarson\results_ma27\eulvtf_oh_no_restriction\_eulvtf_oh__shunts_scenario_1__power_mult_1.0__resistive_true.json"
-            for power_mult in [1.0]#, 2.0]
+            for power_mult in [2.0]
                 extra_id = "_power_mult_$(power_mult)"
                 estimated_linecode = [f for f in readdir(joinpath(general_result_path, folder)) if occursin("_linecode_results_scenario_1__power_mult_$(power_mult)_", f)][1]
                 estimated_branch_length = [f for f in readdir(joinpath(general_result_path, folder)) if occursin("_length_dict_scenario_1__power_mult_$(power_mult)_", f)][1]

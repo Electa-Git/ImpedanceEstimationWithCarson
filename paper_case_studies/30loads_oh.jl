@@ -14,7 +14,7 @@ pf_solver = _PMD.optimizer_with_attributes(Ipopt.Optimizer, "max_cpu_time" => 20
 
 timestep_set = find_most_loaded_timesteps(profiles, 200)
 
-for power_mult in [1.]
+for power_mult in [2.]
     run_impedance_estimation_oh_nogroundvar_30_load_case(raw"C:\Users\mvanin\OneDrive - KU Leuven\Desktop\repos\DataDrivenImpedanceEstimationWithCarson\results_ma27/", ie_solver, pf_solver, profiles, timestep_set, add_meas_noise = true, length_bounds_percval=0.3, power_mult=power_mult)
 end
 

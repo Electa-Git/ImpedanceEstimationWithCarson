@@ -11,3 +11,13 @@ function objective_minimize_residuals(pm::_PMD.AbstractUnbalancedPowerModel)
     for (nw, nw_ref) in _PMD.nws(pm) ) # sum over all the considered time steps
     )
 end
+
+function objective_minimize_residuals_vm(pm::_PMD.AbstractUnbalancedPowerModel)
+    return JuMP.@objective(pm.model, Min,
+    sum(
+        sum(
+            sum(_PMD.var(pm, nw, :res, i)[idx] for idx in 1:length(_PMD.var(pm, nw, :res, i)) )
+        for i in _PMD.ids(pm, nw, :meas) if _PMD.ref(pm, nw, :meas,i)["var"] == :vm) # sum over all the considered measurements
+    for (nw, nw_ref) in _PMD.nws(pm) ) # sum over all the considered time steps
+    )
+end

@@ -22,6 +22,8 @@ module DataDrivenImpedanceEstimationWithCarson
     include("core/variable_shared.jl")
 
     include("prob/imp_est_carson.jl")
+    include("prob/shunt_only_est.jl")
+    include("prob/shunt_only_vm_in_obj_only.jl")
 
     # include("io/length_utils.jl")
     include("io/multinetwork_data.jl")

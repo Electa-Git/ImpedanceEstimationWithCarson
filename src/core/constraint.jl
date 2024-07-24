@@ -38,6 +38,10 @@ function constraint_mc_residual(pm::_PMD.AbstractUnbalancedPowerModel, i::Int; n
                 JuMP.@constraint(pm.model,
                     res[idx] * rsc * σ >= - ((vr_p-vr_n)^2+(vi_p-vi_n)^2 - μ^2)
                 )
+            elseif crit == "rwls" 
+                JuMP.@constraint(pm.model,
+                res[idx] * rsc^2 * σ^2 <=  ((vr_p-vr_n)^2+(vi_p-vi_n)^2 - μ^2)^2 
+            )
             else #wls
                 JuMP.@constraint(pm.model,
                 res[idx] * rsc^2 * σ^2 ==  ((vr_p-vr_n)^2+(vi_p-vi_n)^2 - μ^2)^2 
@@ -61,6 +65,10 @@ function constraint_mc_residual(pm::_PMD.AbstractUnbalancedPowerModel, i::Int; n
                     JuMP.@constraint(pm.model,
                         res[idx] * rsc * σ >= - ( (vr_p - vr_n)*cr+(vi_p-vi_n)*ci - μ)
                     )
+                elseif crit == "rwls" 
+                    JuMP.@constraint(pm.model,
+                    res[idx] * rsc^2 * σ^2 <=  ((vr_p-vr_n)^2+(vi_p-vi_n)^2 - μ^2)^2 
+                )    
                 else #wls
                     JuMP.@constraint( pm.model, res[idx] * rsc^2 * σ^2 == ( (vr_p - vr_n)*cr+(vi_p-vi_n)*ci - μ )^2 )
                 end
@@ -72,6 +80,10 @@ function constraint_mc_residual(pm::_PMD.AbstractUnbalancedPowerModel, i::Int; n
                     JuMP.@constraint(pm.model,
                         res[idx] * rsc * σ >= - ( -(vr_p-vr_n)*ci+(vi_p-vi_n)*cr - μ)
                     )
+                elseif crit == "rwls" 
+                    JuMP.@constraint(pm.model,
+                    res[idx] * rsc^2 * σ^2 <=  ((vr_p-vr_n)^2+(vi_p-vi_n)^2 - μ^2)^2 
+                )    
                 else # wls
                     JuMP.@constraint(pm.model, res[idx] * rsc^2 * σ^2 == ( -(vr_p-vr_n)*ci+(vi_p-vi_n)*cr - μ)^2 )
                 end
@@ -88,6 +100,74 @@ function constraint_mc_residual(pm::_PMD.AbstractUnbalancedPowerModel, i::Int; n
             else #wls
                 JuMP.@constraint(pm.model,
                 res[idx] * σ^2 == (_PMD.var(pm, nw, :l, _PMD.ref(pm, nw, :meas, i, "cmp_id"))- μ)^2 )
+            end
+        else
+            @error "Sorry, measurement $(_PMD.ref(pm, nw, :meas, i, "var")) not supported (yet)."
+        end
+    end
+end
+"""
+    constraint_mc_residual_vm
+
+only vm measurements end up in the residuals, powers are fixed
+"""
+function constraint_mc_residual_vm(pm::_PMD.AbstractUnbalancedPowerModel, i::Int; nw::Int=_IM.nw_id_default)
+
+    cmp_id = get_cmp_id(pm, nw, i)
+    res = _PMD.var(pm, nw, :res, i)
+    dst = _PMD.ref(pm, nw, :meas, i, "dst")
+    rsc = _PMD.ref(pm, 1, :settings)["rescaler"]
+    cmp =  _PMD.ref(pm, nw, :meas, i, "cmp")
+    crit = haskey(_PMD.ref(pm, nw, :meas, i), "crit") ? _PMD.ref(pm, nw, :meas, i, "crit") : "rwlav"
+
+    conns =  get_active_connections(pm, nw, cmp, cmp_id)
+    bus_id = _PMD.ref(pm, nw, :meas, i, "var") == :vm ? cmp_id : get_cmp_bus(pm, nw, cmp, cmp_id)    
+    # get neutral voltage of the bus
+    vr_n = _PMD.var(pm, nw, :vr, bus_id)[4]
+    vi_n = _PMD.var(pm, nw, :vi, bus_id)[4]
+
+    for (idx, c) in enumerate(setdiff(conns, [4])) # setdiff(...,[4]) excludes the neutral, which is never measured!
+
+        if  _PMD.ref(pm, nw, :meas, i, "var") == :vm    
+            
+            μ, σ = (_DST.mean(dst[idx]), _DST.std(dst[idx]))
+
+            vr_p = _PMD.var(pm, nw, :vr, bus_id)[c]
+            vi_p = _PMD.var(pm, nw, :vi, bus_id)[c]
+            if crit == "rwlav"
+                JuMP.@constraint(pm.model,
+                    res[idx] * rsc * σ >=   ((vr_p-vr_n)^2+(vi_p-vi_n)^2 - μ^2) 
+                )
+                JuMP.@constraint(pm.model,
+                    res[idx] * rsc * σ >= - ((vr_p-vr_n)^2+(vi_p-vi_n)^2 - μ^2)
+                )
+            elseif crit == "rwls" 
+                JuMP.@constraint(pm.model,
+                    res[idx] * rsc^2 * σ^2 <=  ((vr_p-vr_n)^2+(vi_p-vi_n)^2 - μ^2)^2 
+                )
+            else #wls
+                JuMP.@constraint(pm.model,
+                    res[idx] * rsc^2 * σ^2 ==  ((vr_p-vr_n)^2+(vi_p-vi_n)^2 - μ^2)^2 
+                )
+            end
+        
+        elseif _PMD.ref(pm, nw, :meas, i, "var") ∈ [:pg, :pd, :qg, :qd]
+            
+            μ, σ = (_DST.mean(dst[idx]), _DST.std(dst[idx]))
+
+            cr, ci = get_currents(pm, nw, cmp, cmp_id, conns, c) # gets load or generator current variables depending on which of the two it is
+            
+            vr_p = _PMD.var(pm, nw, :vr, bus_id)[c]
+            vi_p = _PMD.var(pm, nw, :vi, bus_id)[c]
+
+            if _PMD.ref(pm, nw, :meas, i, "var") ∈ [:pg, :pd] 
+                JuMP.@constraint(pm.model,
+                    μ == ( (vr_p - vr_n)*cr+(vi_p-vi_n)*ci ) 
+                )
+            else
+                JuMP.@constraint(pm.model,
+                    μ == ( -(vr_p-vr_n)*ci+(vi_p-vi_n)*cr ) 
+                )
             end
         else
             @error "Sorry, measurement $(_PMD.ref(pm, nw, :meas, i, "var")) not supported (yet)."

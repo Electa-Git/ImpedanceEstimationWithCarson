@@ -29,6 +29,32 @@ function variable_mc_residual(  pm::_PMD.AbstractUnbalancedPowerModel;
     report && _IM.sol_component_value(pm,:pmd, nw, :meas, :res, _PMD.ids(pm, nw, :meas), res)
 end
 """
+Variable that defines the residuals for the vm measurements only.
+"""
+function variable_mc_residual_vm(  pm::_PMD.AbstractUnbalancedPowerModel;
+                                nw::Int=_PMD.nw_id_default, bounded::Bool=true,
+                                report::Bool=true)
+
+    connections = Dict(i => length(meas["dst"]) for (i,meas) in _PMD.ref(pm, nw, :meas) )
+
+    res = _PMD.var(pm, nw)[:res] = Dict(i => JuMP.@variable(pm.model,
+            [c in 1:connections[i]], base_name = "$(nw)_res_$(i)",
+            start = _PMD.comp_start_value(_PMD.ref(pm, nw, :meas, i), "res_start", c, 0.0)
+            ) for i in _PMD.ids(pm, nw, :meas) if _PMD.ref(pm, nw, :meas,i)["var"] == :vm
+        )
+    if bounded
+        for (i, meas) in _PMD.ref(pm, nw, :meas), c in 1:connections[i]
+            if  meas["var"] == :vm
+                JuMP.set_lower_bound(res[i][c], 0.0)
+                res_max = haskey(_PMD.ref(pm, nw, :meas, i), "res_max") ? meas["res_max"] : 5e3
+                JuMP.set_upper_bound(res[i][c], res_max)
+            end    
+        end
+    end
+
+    report && _IM.sol_component_value(pm,:pmd, nw, :meas, :res, [i for i in _PMD.ids(pm, nw, :meas) if _PMD.ref(pm, nw, :meas,i)["var"] == :vm ], res)
+end
+"""
 	function variable_mc_branch_current(
 		pm::AbstractExplicitNeutralIVRModel;
 		nw::Int=nw_id_default,
