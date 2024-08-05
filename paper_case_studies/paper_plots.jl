@@ -49,52 +49,42 @@ branch_length_plots(general_result_path, "eulvtf_ug")
 #########################
 
 # powerflow validation
-plot_30l_oh_pf_validation(general_result_path, power_mult=2.0)
-plot_eu_oh_pf_validation(general_result_path, power_mult=2.0)
-plot_30l_oh_noground_pf_validation(general_result_path, power_mult=2.0)
-plot_eu_oh_noground_pf_validation(general_result_path, power_mult=2.0)
+# plot_30l_oh_pf_validation(general_result_path, power_mult=2.0)
+plot_eu_oh_pf_validation(general_result_path, power_mult=2.0, ylims = (-0.1, 2.2))
+# plot_30l_oh_noground_pf_validation(general_result_path, power_mult=2.0)
+plot_eu_oh_noground_pf_validation(general_result_path, power_mult=2.0, ylims = (-0.1, 2.2))
 
 # cumulative impedance
-plot_30l_oh_cumulative_diffs_rxz_mult_1(general_result_path, power_mult=2.0, ylims=(-0.5, 50))
+# plot_30l_oh_cumulative_diffs_rxz_mult_1(general_result_path, power_mult=2.0, ylims=(-0.5, 50))
 plot_eu_oh_cumulative_diffs_rxz_mult_1(general_result_path, power_mult=2.0, ylims=(-0.5, 25))
-plot_30l_oh_noground_cumulative_diffs_rxz_mult_1(general_result_path, power_mult=2.0,ylims=(-0.5, 50))
+# plot_30l_oh_noground_cumulative_diffs_rxz_mult_1(general_result_path, power_mult=2.0,ylims=(-0.5, 50))
 plot_eu_oh_cumulative_diffs_rxz_noground(general_result_path, power_mult=2.0, ylims=(-0.5, 25))
 
 # linecode plots
-linecode_plots(general_result_path, "30l_oh", power_mult=2.0)
-linecode_plots(general_result_path, "30l_oh_noground", power_mult=2.0)
+# linecode_plots(general_result_path, "30l_oh", power_mult=2.0)
+# linecode_plots(general_result_path, "30l_oh_noground", power_mult=2.0)
 linecode_plots(general_result_path, "eulvtf_oh"; feeder_id = "eulvtf", power_mult=2.0)
 linecode_plots(general_result_path, "eulvtf_oh_noground"; feeder_id = "eulvtf", power_mult=2.0)
 
 # carson input plots
-carson_input_plots(general_result_path, "30l_oh", power_mult=2.0)
-carson_input_plots(general_result_path, "30l_oh_noground", power_mult=2.0)
+# carson_input_plots(general_result_path, "30l_oh", power_mult=2.0)
+# carson_input_plots(general_result_path, "30l_oh_noground", power_mult=2.0)
 carson_input_plots(general_result_path, "eulvtf_oh", power_mult=2.0)
 carson_input_plots(general_result_path, "eulvtf_oh_noground", power_mult=2.0)
 
 # branch length plots
-branch_length_plots(general_result_path, "30l_oh", power_mult=2.0)
+# branch_length_plots(general_result_path, "30l_oh", power_mult=2.0)
 branch_length_plots(general_result_path, "eulvtf_oh", power_mult=2.0)
-branch_length_plots(general_result_path, "30l_oh_noground", power_mult=2.0)
+# branch_length_plots(general_result_path, "30l_oh_noground", power_mult=2.0)
 branch_length_plots(general_result_path, "eulvtf_oh_noground", power_mult=2.0)
 
 # shunt plots
-shunt_plots_scatter(general_result_path, "30l_oh", power_mult=2.0)
+# shunt_plots_scatter(general_result_path, "30l_oh", power_mult=2.0)
 shunt_plots_scatter(general_result_path, "eulvtf_oh",power_mult=2.0)
 
-#########################
-### SMALLER NEUTRAL ###
-#########################
+#################### PLOTS with no NOISE ###################
 
-plot_smaller_neutral(general_result_path, ["eulvtf_oh_smaller_neutral_most_restricted", "eulvtf_oh_smaller_neutral_horizontal_only","eulvtf_oh_smaller_neutral_cross_only","eulvtf_oh_smaller_neutral_no_restriction"], power_mult=2.0, ylims=(-0.5, 25))
-plot_smaller_neutral(general_result_path, ["eulvtf_oh_smaller_neutral_noground_most_restricted", "eulvtf_oh_smaller_neutral_noground_horizontal_only", "eulvtf_oh_smaller_neutral_noground_cross_only", "eulvtf_oh_smaller_neutral_noground_no_restriction"], power_mult=2.0, ylims=(-0.5, 25))
 
-shunt_plots_scatter(general_result_path, "eulvtf_oh_smaller_neutral",power_mult=2.0)
-
-powerflow_validation_paperplot(general_result_path, ["eulvtf_oh_smaller_neutral_most_restricted"], power_mult=2.0, ytickz = [0., 0.5, 1., 1.5, 2., 2.5])
-
-plot_eu_oh_pf_validation(general_result_path, power_mult=2.0)
-plot_eu_oh_noground_pf_validation(general_result_path, power_mult=2.0)
 
 #######################################################################################################
 #######################################################################################################
@@ -142,20 +132,20 @@ function plot_eu_ug_pf_validation(general_result_path)
     end
 end
 
-function plot_eu_oh_pf_validation(general_result_path; power_mult::Float64=1.0)
+function plot_eu_oh_pf_validation(general_result_path; power_mult::Float64=1.0, ylims=(-0.1, 2.0))
     case = "eulvtf_oh"
     folders = ["eulvtf_oh_cross_only", "eulvtf_oh_horizontal_only", "eulvtf_oh_most_restricted", "eulvtf_oh_no_restriction"]
     p = powerflow_validation_paperplot(general_result_path, folders, power_mult=power_mult, ytickz = [0., 0.5, 1., 1.5, 2., 2.5])
-    _SP.ylims!(-0.1, 2.0)
+    _SP.ylims!(ylims)
     _SP.savefig(general_result_path*"/$(case)_pf_validation_constr_paper_power_mult_$(power_mult).png")
     _SP.savefig(general_result_path*"/$(case)_pf_validation_constr_paper_power_mult_$(power_mult).pdf")
 end
 
-function plot_eu_oh_noground_pf_validation(general_result_path; power_mult::Float64=1.0)
+function plot_eu_oh_noground_pf_validation(general_result_path; power_mult::Float64=1.0, ylims = (-0.1, 2.0))
     case = "eulvtf_oh_noground"
     folders = ["eulvtf_oh_noground_cross_only", "eulvtf_oh_noground_horizontal_only", "eulvtf_oh_noground_most_restricted", "eulvtf_oh_noground_no_restriction"]
     p = powerflow_validation_paperplot(general_result_path, folders, power_mult = power_mult, ytickz = [0., 0.5, 1., 1.5, 2., 2.5])
-    _SP.ylims!(-0.1, 2.0)
+    _SP.ylims!(ylims)
     _SP.savefig(general_result_path*"/$(case)_pf_validation_constr_paper_$(power_mult).png")
     _SP.savefig(general_result_path*"/$(case)_pf_validation_constr_paper_$(power_mult).pdf")
 end
@@ -265,8 +255,6 @@ function powerflow_validation_paperplot(general_result_path::String, folders::Ve
 
     return p
 end
-
-
 
 function powerflow_validation_paperplot_nogroundcase(general_result_path::String, case::String; ytickz::Vector=[])
 
@@ -440,23 +428,6 @@ function plot_eu_oh_cumulative_diffs_rxz_noground(general_result_path; power_mul
                 p =  cumulative_zrx_boxplot_crossconstraint_paper(general_result_path, folders, power_mult; whatt=whatt, ytickz = yticks, ylims = ylims)
                 _SP.savefig(general_result_path*"/eulvtf_oh_noground_cumulative_$(whatt)_diff_boxplot_constr_paper_pm_$power_mult.png")
                 _SP.savefig(general_result_path*"/eulvtf_oh_noground_cumulative_$(whatt)_diff_boxplot_constr_paper_pm_$power_mult.pdf")
-            end
-        end
-    end
-end
-
-function plot_smaller_neutral(general_result_path, folders; power_mult::Float64=1.0, ylims=())
-    # folders = ["eulvtf_oh_smaller_neutral_most_restricted"]#, "eulvtf_oh_smaller_neutral_most_restricted"] #["eulvtf_oh_noground_cross_only", "eulvtf_oh_noground_horizontal_only", "eulvtf_oh_noground_most_restricted", "eulvtf_oh_noground_no_restriction"] 
-    for folder in folders
-        if  any([(occursin("imp_est_scenario_1__", i) && occursin("power_mult_$power_mult", i)) for i in readdir(joinpath(general_result_path, folder))])
-            for whatt in ["Xc", "Rc", "Zc"]
-                # if whatt == "Xc" ylims = (-0.4, 30.4) end
-                if whatt == "Xc" yticks = [i for i in 0:5:30] end 
-                if whatt == "Rc" yticks = [i for i in 0:20:100] end  
-                if whatt == "Zc" yticks = [i for i in 0:10:60] end  
-                p =  cumulative_zrx_boxplot_crossconstraint_paper(general_result_path, folders, power_mult; whatt=whatt, ytickz = yticks, ylims = ylims)
-                _SP.savefig(general_result_path*"/$(folder)_$(whatt)_diff_boxplot_constr_paper_pm_$power_mult.png")
-                _SP.savefig(general_result_path*"/$(folder)_$(whatt)_diff_boxplot_constr_paper_pm_$power_mult.pdf")
             end
         end
     end
@@ -1006,7 +977,7 @@ function shunt_plots_scatter(general_result_path::String, case::String; power_mu
 
     _SP.scatter(shunt_true, ylabel=L"1/y^{sh} \, \, [\Omega]", xlabel = L"\textrm{Shunt} \, \, \textrm{id.} \, \, \textrm{[-]}", label = L"\textrm{True}", 
                 xticks = xtkz, xtickfontsize=13,ytickfontsize=12, ylabelfontsize=14, legendfontsize=12, markershape = :xcross, ms=6, color="black",
-                yticks = ([5, 20, 40, 60, 80, 100], [L"%$i" for i in [5, 20, 40, 60, 80, 100]]))
+                yticks = ([20, 40, 60, 80, 100, 150, 250, 300], [L"%$i" for i in [20, 40, 60, 80, 100, 150, 250, 300]]))
 
     legend_filenames = []
     for folder in folders
