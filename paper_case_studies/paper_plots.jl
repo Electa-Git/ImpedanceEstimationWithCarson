@@ -49,42 +49,58 @@ branch_length_plots(general_result_path, "eulvtf_ug")
 #########################
 
 # powerflow validation
-# plot_30l_oh_pf_validation(general_result_path, power_mult=2.0)
 plot_eu_oh_pf_validation(general_result_path, power_mult=2.0, ylims = (-0.1, 2.2))
-# plot_30l_oh_noground_pf_validation(general_result_path, power_mult=2.0)
 plot_eu_oh_noground_pf_validation(general_result_path, power_mult=2.0, ylims = (-0.1, 2.2))
 
 # cumulative impedance
-# plot_30l_oh_cumulative_diffs_rxz_mult_1(general_result_path, power_mult=2.0, ylims=(-0.5, 50))
 plot_eu_oh_cumulative_diffs_rxz_mult_1(general_result_path, power_mult=2.0, ylims=(-0.5, 25))
-# plot_30l_oh_noground_cumulative_diffs_rxz_mult_1(general_result_path, power_mult=2.0,ylims=(-0.5, 50))
 plot_eu_oh_cumulative_diffs_rxz_noground(general_result_path, power_mult=2.0, ylims=(-0.5, 25))
 
 # linecode plots
-# linecode_plots(general_result_path, "30l_oh", power_mult=2.0)
-# linecode_plots(general_result_path, "30l_oh_noground", power_mult=2.0)
 linecode_plots(general_result_path, "eulvtf_oh"; feeder_id = "eulvtf", power_mult=2.0)
 linecode_plots(general_result_path, "eulvtf_oh_noground"; feeder_id = "eulvtf", power_mult=2.0)
 
 # carson input plots
-# carson_input_plots(general_result_path, "30l_oh", power_mult=2.0)
-# carson_input_plots(general_result_path, "30l_oh_noground", power_mult=2.0)
 carson_input_plots(general_result_path, "eulvtf_oh", power_mult=2.0)
 carson_input_plots(general_result_path, "eulvtf_oh_noground", power_mult=2.0)
 
 # branch length plots
-# branch_length_plots(general_result_path, "30l_oh", power_mult=2.0)
 branch_length_plots(general_result_path, "eulvtf_oh", power_mult=2.0)
-# branch_length_plots(general_result_path, "30l_oh_noground", power_mult=2.0)
 branch_length_plots(general_result_path, "eulvtf_oh_noground", power_mult=2.0)
 
 # shunt plots
-# shunt_plots_scatter(general_result_path, "30l_oh", power_mult=2.0)
 shunt_plots_scatter(general_result_path, "eulvtf_oh",power_mult=2.0)
+
+# noiseless impedance estimation
+plot_noiseless_ie(general_result_path)
 
 #################### PLOTS with no NOISE ###################
 
+function plot_noiseless_ie(general_result_path::String; ytickz=[0,1,2,3,4,5,6])
+    imp_true = [file for file in readdir(joinpath(general_result_path, "eulvtf_noiseless")) if occursin("imp_true", file)][1]
 
+    imp_est = vcat([file for file in readdir(joinpath(general_result_path, "eulvtf_noiseless")) if occursin("imp_est", file)][1],
+                   [file for file in readdir(joinpath(general_result_path, "eulvtf_noground_noiseless")) if occursin("imp_est", file)][1]) 
+
+    whatt = "Zc"
+
+    true_impedance_dict = JSON.parsefile(joinpath(general_result_path, "eulvtf_noiseless", imp_true))
+    est_impedance_dict = [JSON.parsefile(joinpath(general_result_path, "eulvtf_noiseless", imp_est[1])),
+                          JSON.parsefile(joinpath(general_result_path, "eulvtf_noground_noiseless", imp_est[2]))]
+
+    ylab = L"(|%$whatt^{\textrm{true}} - %$whatt^{\textrm{est}}|)/%$whatt^{\textrm{true}} \times \textrm{100} \, \, [\%]"
+    p = _SP.boxplot([abs(v["$(whatt)_est"]-true_impedance_dict[k]["$(whatt)_true"])/true_impedance_dict[k]["$(whatt)_true"]*100 for (k,v) in est_impedance_dict[1]],
+                    ylabel = ylab, legend = false, color = :lightgrey, xtickfontsize=11,ytickfontsize=11, ylabelfontsize=14)
+    _SP.boxplot!([abs(v["$(whatt)_est"]-true_impedance_dict[k]["$(whatt)_true"])/true_impedance_dict[k]["$(whatt)_true"]*100 for (k,v) in est_impedance_dict[2]]
+    , color = :lightgrey, xticks = ((1:2), [L"%$\textrm{with} \, \, \, y^{\textrm{sh}}", L"%$\textrm{without} \, \, \, y^{\textrm{sh}}"] ))
+
+    if !isempty(ytickz)
+        _SP.plot!(yticks=(ytickz, [L"%$i" for i in ytickz]))
+    end 
+
+    _SP.savefig(general_result_path*"/noiseless_ie.png")
+    _SP.savefig(general_result_path*"/noiseless_ie.pdf")
+end
 
 #######################################################################################################
 #######################################################################################################
