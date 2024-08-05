@@ -59,5 +59,5 @@ for (n, nw) in sol_free["solution"]["nw"]
     end
 end
 
-sol["solution"]["nw"]["1"]["bus"]
-sol_free["solution"]["nw"]["1"]["bus"]
+sol["solution"]["nw"]["1"]["bus"]["4"]
+sol_free["solution"]["nw"]["1"]["bus"]["4"]

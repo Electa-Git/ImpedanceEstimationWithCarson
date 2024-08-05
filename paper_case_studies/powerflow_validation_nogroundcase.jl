@@ -23,7 +23,7 @@ validation_timesteps = find_most_loaded_timesteps(profiles, 400)[201:end]
 #### RUNS POWER FLOW VALIDATION
 ########################################################################
 
-for folder in ["30l_oh_noground_cross_only", "30l_oh_noground_horizontal_only", "30l_oh_noground_most_restricted", "30l_oh_noground_no_restriction"]#["eulvtf_oh_noground_cross_only", "eulvtf_noground_oh_horizontal_only", "eulvtf_oh_noground_most_restricted", "eulvtf_oh_noground_no_restriction"]#["30l_oh_noground_cross_only", "30l_oh_noground_horizontal_only", "30l_oh_noground_most_restricted", "30l_oh_noground_no_restriction"]
+for folder in ["eulvtf_oh_noground_cross_only", "eulvtf_noground_oh_horizontal_only", "eulvtf_oh_noground_most_restricted", "eulvtf_oh_noground_no_restriction"]#["eulvtf_oh_smaller_neutral_noground_most_restricted"]#, "eulvtf_smaller_neutral_noground_most_restricted"]#["30l_oh_noground_cross_only", "30l_oh_noground_horizontal_only", "30l_oh_noground_most_restricted", "30l_oh_noground_no_restriction"]#["eulvtf_oh_noground_cross_only", "eulvtf_noground_oh_horizontal_only", "eulvtf_oh_noground_most_restricted", "eulvtf_oh_noground_no_restriction"]#["30l_oh_noground_cross_only", "30l_oh_noground_horizontal_only", "30l_oh_noground_most_restricted", "30l_oh_noground_no_restriction"]
     if isdir(joinpath(general_result_path, folder)) && occursin("oh", folder)
         feeder_name = occursin("30", folder) ? "30load-feeder" : "eulvtf"
         result_path = joinpath(general_result_path, folder)
@@ -40,11 +40,11 @@ for folder in ["30l_oh_noground_cross_only", "30l_oh_noground_horizontal_only", 
                 end
             end
         else
-            true_ground_shunts = raw"C:\Users\mvanin\OneDrive - KU Leuven\Desktop\repos\DataDrivenImpedanceEstimationWithCarson\results_ma27\eulvtf_oh_no_restriction\_eulvtf_oh__shunts_scenario_1__power_mult_1.0__resistive_true.json"
+            true_ground_shunts = raw"C:\Users\mvanin\OneDrive - KU Leuven\Desktop\repos\DataDrivenImpedanceEstimationWithCarson\results_ma27\eulvtf_oh_no_restriction\_eulvtf_oh__shunts_scenario_1__power_mult_1.0__resistive_true.json"#raw"C:\Users\mvanin\OneDrive - KU Leuven\Desktop\repos\DataDrivenImpedanceEstimationWithCarson\results_ma27\eulvtf_oh_smaller_neutral_most_restricted\_eulvtf_oh__shunts_scenario_1__power_mult_2.0__resistive_true.json"#
             for power_mult in [2.0]
                 extra_id = "_power_mult_$(power_mult)"
-                estimated_linecode = [f for f in readdir(joinpath(general_result_path, folder)) if occursin("_linecode_results_scenario_1__power_mult_$(power_mult)_", f)][1]
-                estimated_branch_length = [f for f in readdir(joinpath(general_result_path, folder)) if occursin("_length_dict_scenario_1__power_mult_$(power_mult)_", f)][1]
+                estimated_linecode = [f for f in readdir(joinpath(general_result_path, folder)) if (occursin("_linecode_results_scenario_1__", f) && occursin("power_mult_$(power_mult)_", f))][1]
+                estimated_branch_length = [f for f in readdir(joinpath(general_result_path, folder)) if (occursin("_length_dict_scenario_1__", f) && occursin("power_mult_$(power_mult)_", f))][1]
                 powerflow_validation_nogroundcase(feeder_name, result_path, true_ground_shunts, joinpath(general_result_path, folder,estimated_linecode), joinpath(general_result_path, folder,estimated_branch_length), profiles, extra_id, validation_timesteps, pf_solver; power_mult=power_mult)
             end
         end

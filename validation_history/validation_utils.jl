@@ -145,7 +145,7 @@ function set_up_validation_shunt(;power_mult::Float64 = 25.)
 
     profiles_df = CSV.read(joinpath(_IMP.DATA_DIR, "profiles.csv"), _DF.DataFrame,  ntasks = 1)
 
-    ntw_path = raw"data/Master.dss"
+    ntw_path = raw"C:\Users\mvanin\OneDrive - KU Leuven\Desktop\repos\DataDrivenImpedanceEstimationWithCarson\validation_history/data/Master.dss"
     eng = _PMD.parse_file(ntw_path, transformations=[_PMD.transform_loops!,_PMD.remove_all_bounds!]) # note that after this the impedances in linecodes are in Ω/m
     _IMP.rm_enwl_transformer!(eng)
     _IMP.reduce_enwl_lines_eng!(eng)

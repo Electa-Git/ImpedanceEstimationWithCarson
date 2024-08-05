@@ -134,7 +134,7 @@ function variable_phase_cross_sections_equal(pm::_PMD.AbstractExplicitNeutralIVR
     A_ph = Dict(i => JuMP.@variable(pm.model,
                       base_name="A_ph_$(i)",
                       lower_bound = 12, 
-                      upper_bound = 300,
+                      upper_bound = 320,
                       start = _PMD.comp_start_value(linecode, "A_p_start", 10.)
                       )
                     for (i, linecode) in _PMD.ref(pm, 1, :linecode_map) 
@@ -143,7 +143,7 @@ function variable_phase_cross_sections_equal(pm::_PMD.AbstractExplicitNeutralIVR
     A_n = Dict(i => JuMP.@variable(pm.model,
         base_name="A_n_$(i)",
         lower_bound = 6, 
-        upper_bound = 300,
+        upper_bound = 320,
         start = _PMD.comp_start_value(linecode, "A_p_start", 10.)
         )
         for (i, linecode) in _PMD.ref(pm, 1, :linecode_map) 
@@ -154,7 +154,7 @@ function variable_phase_cross_sections_equal(pm::_PMD.AbstractExplicitNeutralIVR
     gmr_ph = Dict(i => JuMP.@variable(pm.model,
             base_name="gmr_ph_$(i)",
             lower_bound = .8, 
-            upper_bound = 9., 
+            upper_bound = 10., 
             start = _PMD.comp_start_value(linecode, "gmr_start", 1.965)
             )
             for (i, linecode) in _PMD.ref(pm, 1, :linecode_map) 
@@ -163,7 +163,7 @@ function variable_phase_cross_sections_equal(pm::_PMD.AbstractExplicitNeutralIVR
     gmr_n = Dict(i => JuMP.@variable(pm.model,
             base_name="gmr_n_$(i)",
             lower_bound = .5, 
-            upper_bound = 9., 
+            upper_bound = 10., 
             start = _PMD.comp_start_value(linecode, "gmr_start", 1.965)
         ) for (i, linecode) in _PMD.ref(pm, 1, :linecode_map) ) 
 
@@ -360,9 +360,9 @@ function variable_bus_shunt_admittance(pm::_PMD.AbstractExplicitNeutralIVRModel;
 
     g_sh = _PMD.var(pm, nw)[:g_sh] = Dict(i => JuMP.@variable(pm.model,
                 base_name="g_sh_$(i)",
-                lower_bound = z_pu/100.,
-                upper_bound = z_pu/5., 
-                start = _PMD.comp_start_value(_PMD.ref(pm, nw, :bus, i), "g_sh_start", z_pu/10) 
+                lower_bound = z_pu/300.,
+                upper_bound = z_pu/20., 
+                start = _PMD.comp_start_value(_PMD.ref(pm, nw, :bus, i), "g_sh_start", z_pu/60) 
                 ) for i in _PMD.ids(pm, nw, :bus) 
                      if any(_PMD.ref(pm, nw, :bus, i, "imp_grounded"))
             )

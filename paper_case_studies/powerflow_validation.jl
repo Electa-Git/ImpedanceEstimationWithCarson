@@ -17,7 +17,7 @@ validation_timesteps = find_most_loaded_timesteps(profiles, 400)[201:end]
 #### RUNS POWER FLOW VALIDATION
 ########################################################################
 
-for folder in ["30l_oh_cross_only", "30l_oh_horizontal_only", "30l_oh_most_restricted", "30l_oh_no_restriction"]#, "eulvtf_oh_cross_only", "eulvtf_oh_horizontal_only", "eulvtf_oh_most_restricted", "eulvtf_oh_no_restriction"]#readdir(general_result_path)
+for folder in ["eulvtf_oh_cross_only", "eulvtf_oh_horizontal_only", "eulvtf_oh_most_restricted", "eulvtf_oh_no_restriction"] #["eulvtf_oh_smaller_neutral_most_restricted"]#["30l_oh_cross_only", "30l_oh_horizontal_only", "30l_oh_most_restricted", "30l_oh_no_restriction"]#, "eulvtf_oh_cross_only", "eulvtf_oh_horizontal_only", "eulvtf_oh_most_restricted", "eulvtf_oh_no_restriction"]#readdir(general_result_path)
     if isdir(joinpath(general_result_path, folder)) && occursin("oh", folder)
         feeder_name = occursin("30", folder) ? "30load-feeder" : "eulvtf"
         result_path = joinpath(general_result_path, folder)
