@@ -2,51 +2,13 @@
 Creates the test networks needed to reproduce our papers' results
 """
 function create_enwl_4w_data()
-    create_loads_files()
     create_lines_files()
     create_master_files()
 end
 """
-Creates updated load files for both test networks
-"""
-function create_loads_files()
-# Open the input text file
-    input_files  = [joinpath(@__DIR__, "network_data", "30load-feeder", "Loads.txt"),  joinpath(@__DIR__, "network_data", "eulvtf", "Loads.txt")]
-    output_files = [joinpath(@__DIR__, "network_data", "30load-feeder", "Loads2.txt"), joinpath(@__DIR__, "network_data", "eulvtf", "Loads2.txt")]
-
-    for (input_file, output_file) in zip(input_files, output_files)
-        # Read the input file line by line
-        lines = readlines(input_file)
-
-        # Open the output file for writing
-        open(output_file, "w") do io
-            # Write header
-            write(io, "! Imported from Loads.txt, with modified neutral terminal\n")
-            write(io, "! ---------------------------------------------------------------------------\n")
-            
-            # Process each line and write the modified line to the output file
-            for line in lines
-                modified_line = modify_line_loads(line)
-                write(io, modified_line)
-            end
-            write(io, "! ---------------------------------------------------------------------------\n")
-        end
-    end
-end
-"""
-Changes the line entries of each load text file to accommodate the neutral conductor
-"""
-function modify_line_loads(line::String)
-    parts = split(line)
-    bus_part = parts[4] * ".4"
-    # kW_value = parse(Float64, split(parts[6], "=")[2])
-    # kW_new = kW_value * rand() * 3 # Adjust the multiplication factor as needed    
-    return "New Load.$(parts[2][6:end]) Phases=1 Bus1=$bus_part kV=0.23 kW=1  PF=0.95\n"
-end
-"""
 Changes the line entries of the lines.txt
 """
-function modify_line_lines(line::String, is_first_line::Bool, output_filename::String)
+function modify_line_lines(line::String, output_filename::String)
     parts = split(line)
     
     # Extract line number from the format "New Line.LINE1"
@@ -62,18 +24,18 @@ function modify_line_lines(line::String, is_first_line::Bool, output_filename::S
     if line_num == 328 && occursin("30load", output_filename) && occursin("_ug", output_filename)
         bus1 = "322.1.2.3.4"
     else
-        bus1 = "$(split(parts[3], "=")[end]).1.2.3.4"    
+        bus1 = "$(parts[3])"    
     end
-    bus2 = "$(split(parts[4], "=")[end]).1.2.3.4"    
+    bus2 = "$(parts[4])"    
     
     length_value = parse(Float64, split(parts[7], "=")[2])
     
-    if is_first_line
-        return """New Line.LINE0 Bus1=sourcebus.1.2.3.4 Bus2=1.1.2.3.4 phases=4 Linecode=$linecode Length=1 Units=m
-                  New Line.$(parts[2][6:end]) Bus1=$bus1 Bus2=$bus2 phases=4 Linecode=$linecode Length=$length_value Units=m\n"""
-    else
-        return "New Line.$(parts[2][6:end]) Bus1=$bus1 Bus2=$bus2 phases=4 Linecode=$linecode Length=$length_value Units=m\n"
-    end
+    # if is_first_line
+    #     return """New Line.LINE0 Bus1=sourcebus.1.2.3.4 Bus2=1.1.2.3.4 phases=4 Linecode=$linecode Length=1 Units=m
+    #               New Line.$(parts[2][6:end]) $bus1 $bus2 phases=4 Linecode=$linecode Length=$length_value Units=m\n"""
+    # else
+    return "New Line.$(parts[2][6:end]) $bus1 $bus2 phases=4 Linecode=$linecode Length=$length_value Units=m\n"
+    # end
 end
 """
 Creates `Lines_oh.txt` and `Lines_ug.txt` for both test cases
@@ -85,7 +47,7 @@ function create_lines_files()
         output_files = [joinpath(@__DIR__, "network_data", "30load-feeder", "Lines$case.txt"), joinpath(@__DIR__, "network_data", "eulvtf", "Lines$case.txt")]
         for (input_file, output_file) in zip(input_files, output_files)
             # Read the input file line by line
-            lines = readlines(input_file)
+            lines = readlines(input_file)[3:end]
 
             # Open the output file for writing
             open(output_file, "w") do io
@@ -95,8 +57,8 @@ function create_lines_files()
                 end
                 write(io, "! ---------------------------------------------------------------------------\n")
                 # Process each line and write the modified line to the output file
-                for (index, line) in enumerate(lines)
-                    modified_line = modify_line_lines(line, index == 1, output_file)
+                for line in lines
+                    modified_line = modify_line_lines(line, output_file)
                     write(io, modified_line)
                 end
                 write(io, "! ---------------------------------------------------------------------------\n")

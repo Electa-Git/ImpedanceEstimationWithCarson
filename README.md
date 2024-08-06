@@ -17,7 +17,7 @@ The impedance and profile data used in this work can be found in the `data` fold
 
 - Yearly fifteen minute resolution active power profiles are a subset of the Open Energy Data Initiative’s (OEDI) dataset [“End-Use Load Profiles for the U.S. Building Stock”](https://data.openei.org/submissions/4520), and released with a CC BY 4.0 license, like the original OEDI active power profiles. See `data/Readme_profiles.md` to check how the subset has been chosen, and how reactive power profiles are added to the original data.
 - The linecode data for the impedances, curated by GridQube and found in `data/linecode_library`, are released under a CC-BY 4.0 license. 
-- The network data we used consist of the **four-wire** extension of Feeder 1, Network 1 and Feeder 5, Network 4 of the Electricity North West Limited (ENWL) [dataset](https://ieeexplore.ieee.org/iel7/59/4374138/07051294.pdf) from the [Low Voltage Network Solutions project](https://www.enwl.co.uk/go-net-zero/innovation/smaller-projects/low-carbon-networks-fund/low-voltage-network-solutions/). Because of the ambiguity of the ENWL dataset in terms of re-distributing the original data, we are not sharing the network data directly. Instructions on how to recreate the data are provided instead, see `Instructions to get the network data` below.
+- The network data we used consist of the **four-wire** extension of Feeder 1, Network 1 and Feeder 5, Network 4 of the Electricity North West Limited (ENWL) [dataset](https://ieeexplore.ieee.org/iel7/59/4374138/07051294.pdf) from the [Low Voltage Network Solutions project](https://www.enwl.co.uk/go-net-zero/innovation/smaller-projects/low-carbon-networks-fund/low-voltage-network-solutions/). ENWL granted permission to CSIRO to upload the extended data set on their data portal. Due to copyright, we cannot share the network data directly. Instructions on how to recreate the data are provided instead, see `Instructions to get the network data` below.
 
 
 Once available, we will put here links to our relevant paper/preprints **TBD**, [on arxiv](https://arxiv.org/).
@@ -77,16 +77,16 @@ The collaboration involved a long overseas stay that received a grant from the S
 
 ## Instructions to get the network data
 
-The easiest option is to ask us for the network data directly (see the GitHub profiles of the contributors for the emails).
+The easiest option is to ask us for the network data directly (see the GitHub profiles of the contributors for their emails).
 
-If you prefer to generate it on your own, or for some reason we are unresponsive (sorry), please do the following steps:
+If you prefer to download them on your own, or for some reason we are unresponsive (sorry), please follow the following steps:
 
-1) Download the `LV network models` ZIP folder from the [ENWL website](https://www.enwl.co.uk/go-net-zero/innovation/smaller-projects/low-carbon-networks-fund/low-voltage-network-solutions/).
+1) Go to the [CSIRO Data Access Portal](https://doi.org/10.25919/jaae-vc35) with the network data collection, and navigate to `Files -> Four-wire`.
 
-2) Transfer the following files from Network 1, Feeder 1 in `data/network_data/eulvtf`:
-    - Loads.txt
-    - Lines.txt
+2) Go to the folder `Network 1 -> Feeder 1` and download the files `Loads.txt` and `Lines.txt`
 
-3) Do the same file transfer for Network 5, Feeder 4, in the `data/network_data/30load-feeder` folder.
+3) Put these files in your local version of this repository, in the `data/network_data/eulvtf` folder.
 
-4) Run `create_enwl_4w_data()` from `data/generate_network_data.jl` to generate the data as used in our case studies.
+4) Repeat step 2 for for `Network 5 -> Feeder 4`, and put the files in the `data/network_data/30load-feeder` folder.
+
+5) Run `create_enwl_4w_data()` from `data/generate_network_data.jl`, which complements the downloaded files to build the data as used in our case studies.
