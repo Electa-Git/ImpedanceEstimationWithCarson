@@ -1,7 +1,7 @@
 # DataDrivenImpedanceEstimationWithCarson
 
 ## Summary
-This repository hosts a Julia package with code and data used to perform the estimation of up-to-four-wire impedance matrices for electric distribution networks, starting from measurement data (from smart meters, specifically).
+This repository hosts a (unregistered) Julia package with code and data used to perform the estimation of up-to-four-wire impedance matrices for electric distribution networks, starting from measurement data (from smart meters, specifically).
 
 From a mathematical standpoint, this is achieved through a joint (power system) state and impedance matrix estimation process. Such process maximizes the likelihood of time-variant electrical states (complex voltages/powers/currents) over a time series, by "fitting" time-invariant impedance matrix entries. Such entries are cast as functions of line and cable construction properties, i.e., distance between conductors, conductor thickness, etc., through Carson's equations.
 
@@ -17,8 +17,7 @@ The impedance and profile data used in this work can be found in the `data` fold
 
 - Yearly fifteen minute resolution active power profiles are a subset of the Open Energy Data Initiative’s (OEDI) dataset [“End-Use Load Profiles for the U.S. Building Stock”](https://data.openei.org/submissions/4520), and released with a CC BY 4.0 license, like the original OEDI active power profiles. See `data/Readme_profiles.md` to check how the subset has been chosen, and how reactive power profiles are added to the original data.
 - The linecode data for the impedances, curated by GridQube and found in `data/linecode_library`, are released under a CC-BY 4.0 license. 
-- The network data we used consist of the **four-wire** extension of Feeder 1, Network 1 and Feeder 5, Network 4 of the Electricity North West Limited (ENWL) [dataset](https://ieeexplore.ieee.org/iel7/59/4374138/07051294.pdf) from the [Low Voltage Network Solutions project](https://www.enwl.co.uk/go-net-zero/innovation/smaller-projects/low-carbon-networks-fund/low-voltage-network-solutions/). ENWL granted permission to CSIRO to upload the extended data set on their data portal. Due to copyright, we cannot share the network data directly. Instructions on how to recreate the data are provided instead, see `Instructions to get the network data` below.
-
+- The network data we used consist of the **four-wire** extension of Feeder 1, Network 1 and Feeder 5, Network 4 of the Electricity North West Limited (ENWL) [dataset](https://ieeexplore.ieee.org/iel7/59/4374138/07051294.pdf) from the [Low Voltage Network Solutions project](https://www.enwl.co.uk/go-net-zero/innovation/smaller-projects/low-carbon-networks-fund/low-voltage-network-solutions/). The ENWL data are **three-wire** in their original form. ENWL granted permission to CSIRO to upload the extended four-wire data set on the [CSIRO Data Access Portal](https://doi.org/10.25919/jaae-vc35), with CC-BY 4.0. The data of the two feeders used for this work is also featured in `data/network_data/30load-feeder` (i.e.: Feeder 5, Network 4) and `data/network_data/eulvtf` (i.e.: Feeder 1, Network 1), in OpenDSS format. Minor changes w.r.t. the CSIRO portal are reported at the top of the `Lines_ ... .txt` files.
 
 Once available, we will put here links to our relevant paper/preprints **TBD**, [on arxiv](https://arxiv.org/).
 
@@ -34,7 +33,7 @@ year = {2024} <br />
 
 ## Running state and impedance estimation calculations
 
-The general code is provided in the form of a Julia package, and can as such be installed using the julia package manager.
+The general code is provided in the form of a Julia package, and can as such be installed using the [julia package manager](https://pkgdocs.julialang.org/v1/managing-packages/#Adding-unregistered-packages).
 
 The functionalities of the package are defined in the functions included in `src/DataDrivenImpedanceEstimationWithCarson.jl`. Any file which is present in `src/` but not listed here, or commented (e.g., `length_utils.jl`), is not used but kept for archiving purposes.
 
@@ -69,24 +68,7 @@ This work was also supported by the Australian Department of Climate Change, Ene
 
 The collaboration involved a long overseas stay that received a grant from the Science Foundation: Flanders (FWO) (Grant N°. V420224N).
 
-
 <img src="./assets/readme/ku_leuven_logo.png" alt="KULeuven" height="120" width="300"/>
 <img src="./assets/readme/ENERGYVILLE-ICOON.png" alt="EnergyVille" height="120" width="120"/>
 <img src="./assets/readme/CSIRO-logo.png" alt="CSIRO" height="120" width="150"/>
-<img src="./assets/readme/improcap_logo.PNG" alt="Improcap" height="120" width="450"/>
-
-## Instructions to get the network data
-
-The easiest option is to ask us for the network data directly (see the GitHub profiles of the contributors for their emails).
-
-If you prefer to download them on your own, or for some reason we are unresponsive (sorry), please follow the following steps:
-
-1) Go to the [CSIRO Data Access Portal](https://doi.org/10.25919/jaae-vc35) with the network data collection, and navigate to `Files -> Four-wire`.
-
-2) Go to the folder `Network 1 -> Feeder 1` and download the files `Loads.txt` and `Lines.txt`
-
-3) Put these files in your local version of this repository, in the `data/network_data/eulvtf` folder.
-
-4) Repeat step 2 for for `Network 5 -> Feeder 4`, and put the files in the `data/network_data/30load-feeder` folder.
-
-5) Run `create_enwl_4w_data()` from `data/generate_network_data.jl`, which complements the downloaded files to build the data as used in our case studies.
+<img src="./assets/readme/improcap_logo.png" alt="Improcap" height="120" width="450"/>
