@@ -19,15 +19,15 @@ The impedance and profile data used in this work can be found in the `data` fold
 - The linecode data for the impedances, curated by GridQube and found in `data/linecode_library`, are released under a CC-BY 4.0 license. 
 - The network data we used consist of the **four-wire** extension of Feeder 1, Network 1 and Feeder 5, Network 4 of the Electricity North West Limited (ENWL) [dataset](https://ieeexplore.ieee.org/iel7/59/4374138/07051294.pdf) from the [Low Voltage Network Solutions project](https://www.enwl.co.uk/go-net-zero/innovation/smaller-projects/low-carbon-networks-fund/low-voltage-network-solutions/). The ENWL data are **three-wire** in their original form. ENWL granted permission to CSIRO to upload the extended four-wire data set on the [CSIRO Data Access Portal](https://doi.org/10.25919/jaae-vc35), with CC-BY 4.0. The data of the two feeders used for this work is also featured in `data/network_data/30load-feeder` (i.e.: Feeder 5, Network 4) and `data/network_data/eulvtf` (i.e.: Feeder 1, Network 1), in OpenDSS format. Minor changes w.r.t. the CSIRO portal are reported at the top of the `Lines_ ... .txt` files.
 
-Once available, we will put here links to our relevant paper/preprints **TBD**, [on arxiv](https://arxiv.org/).
+Once available, we will put here links to our relevant paper/preprints.
 
 ## Citing this work
-If you found this repository interesting and/or useful for your work, we kindly ask you to cite the following paper **WORK IN PROGRESS**:
+We have submitted a paper relative to our work, currently under review:
 
 @Misc{ID, <br />
-author = {austhors}, <br />
-title = {title}, <br />
-howpublished = {\url{https://arxiv.org/}}, <br />
+author = {M. Vanin, F. Geth, R. Heidari, D. Van Hertem}, <br />
+title = {Distribution System State and Impedance Estimation Augmented with Carson’s Equations}, <br />
+howpublished = {}, <br />
 year = {2024} <br />
 }
 
@@ -66,7 +66,7 @@ This work received funding from the Agency for Innovation and Entrepreneurship o
 
 This work was also supported by the Australian Department of Climate Change, Energy, the Environment and Water under the International Clean Innovation Researcher Networks (ICIRN) program grant number ICIRN000072. 
 
-The collaboration involved a long overseas stay that received a grant from the Science Foundation: Flanders (FWO) (Grant N°. V420224N).
+The collaboration involved a long overseas stay that received a grant from the Science Foundation: Flanders (FWO) (Grant N° V420224N).
 
 <img src="./assets/readme/ku_leuven_logo.png" alt="KULeuven" height="120" width="300"/>
 <img src="./assets/readme/ENERGYVILLE-ICOON.png" alt="EnergyVille" height="120" width="120"/>
